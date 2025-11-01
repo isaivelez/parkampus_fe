@@ -1,5 +1,4 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
@@ -7,17 +6,17 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Collapsible } from '@/components/ui/collapsible';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { Fonts, ParkampusTheme } from '@/constants/theme';
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerBackgroundColor={{ light: ParkampusTheme.colors.mainLight, dark: ParkampusTheme.colors.main }}
       headerImage={
         <IconSymbol
           size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
+          color={ParkampusTheme.colors.white}
+          name="car.fill"
           style={styles.headerImage}
         />
       }>
@@ -26,73 +25,85 @@ export default function TabTwoScreen() {
           type="title"
           style={{
             fontFamily: Fonts.rounded,
+            color: ParkampusTheme.colors.main,
           }}>
-          Explore
+          Explorar Parkampus
         </ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
+      <ThemedText style={{ color: ParkampusTheme.colors.black }}>
+        Descubre las funcionalidades de gestión de parqueaderos universitarios.
+      </ThemedText>
+      
+      <Collapsible title="🚗 Gestión de Parqueaderos">
         <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
+          Parkampus permite gestionar los espacios de parqueo de la{' '}
+          <ThemedText type="defaultSemiBold" style={{ color: ParkampusTheme.colors.main }}>
+            Universidad Pascual Bravo - Sede Pilarica
+          </ThemedText>
         </ThemedText>
         <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
+          Con funcionalidades como búsqueda en tiempo real, reservas y navegación por el campus.
+        </ThemedText>
+      </Collapsible>
+
+      <Collapsible title="📱 Multiplataforma">
+        <ThemedText>
+          Esta aplicación funciona en{' '}
+          <ThemedText type="defaultSemiBold" style={{ color: ParkampusTheme.colors.main }}>
+            Android, iOS y web
+          </ThemedText>. 
+          Para abrir la versión web, presiona{' '}
+          <ThemedText type="defaultSemiBold">w</ThemedText> en la terminal donde ejecutas el proyecto.
+        </ThemedText>
+      </Collapsible>
+
+      <Collapsible title="🎨 Diseño Universitario">
+        <ThemedText>
+          Los colores de Parkampus reflejan la identidad visual universitaria:
+        </ThemedText>
+        <ThemedView style={styles.colorContainer}>
+          <ThemedView style={[styles.colorSample, { backgroundColor: ParkampusTheme.colors.main }]}>
+            <ThemedText style={styles.colorText}>Principal</ThemedText>
+          </ThemedView>
+          <ThemedView style={[styles.colorSample, { backgroundColor: ParkampusTheme.colors.mainLight }]}>
+            <ThemedText style={styles.colorText}>Claro</ThemedText>
+          </ThemedView>
+          <ThemedView style={[styles.colorSample, { backgroundColor: ParkampusTheme.colors.black }]}>
+            <ThemedText style={styles.colorText}>Negro</ThemedText>
+          </ThemedView>
+        </ThemedView>
+      </Collapsible>
+
+      <Collapsible title="🛠️ Tecnología">
+        <ThemedText>
+          Desarrollado con{' '}
+          <ThemedText type="defaultSemiBold" style={{ color: ParkampusTheme.colors.main }}>
+            React Native
+          </ThemedText>{' '}
+          y{' '}
+          <ThemedText type="defaultSemiBold" style={{ color: ParkampusTheme.colors.main }}>
+            Expo
+          </ThemedText>
+          , usando el enrutamiento basado en archivos para una experiencia fluida.
         </ThemedText>
         <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
+          <ThemedText type="link" style={{ color: ParkampusTheme.colors.mainLight }}>
+            Aprende más sobre Expo Router
+          </ThemedText>
         </ExternalLink>
       </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
+
+      <Collapsible title="🎓 Proyecto Académico">
         <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
+          Este proyecto es parte del curso de{' '}
+          <ThemedText type="defaultSemiBold" style={{ color: ParkampusTheme.colors.main }}>
+            Ingeniería de Software 2
           </ThemedText>{' '}
-          library to create a waving hand animation.
+          de la Universidad Pascual Bravo.
         </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
+        <ThemedText>
+          Enfocado en resolver problemas reales de movilidad en el campus universitario.
+        </ThemedText>
       </Collapsible>
     </ParallaxScrollView>
   );
@@ -108,5 +119,25 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+  colorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: ParkampusTheme.spacing.md,
+    marginBottom: ParkampusTheme.spacing.md,
+  },
+  colorSample: {
+    width: 80,
+    height: 60,
+    borderRadius: ParkampusTheme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: ParkampusTheme.spacing.xs,
+  },
+  colorText: {
+    color: ParkampusTheme.colors.white,
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

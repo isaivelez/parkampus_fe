@@ -5,25 +5,61 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+// Parkampus Brand Colors
+const mainColor = '#0D47A1';
+const mainLightColor = '#42A5F5';
+const blackColor = '#212121';
+
+const tintColorLight = mainColor;
+const tintColorDark = mainLightColor;
 
 export const Colors = {
   light: {
-    text: '#11181C',
+    text: blackColor,
     background: '#fff',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    primary: mainColor,
+    primaryLight: mainLightColor,
+    black: blackColor,
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: blackColor,
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    primary: mainLightColor,
+    primaryLight: mainColor,
+    black: blackColor,
+  },
+};
+
+// Parkampus Theme
+export const ParkampusTheme = {
+  colors: {
+    main: mainColor,
+    mainLight: mainLightColor,
+    black: blackColor,
+    white: '#FFFFFF',
+    gray: '#687076',
+    lightGray: '#F5F5F5',
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+  borderRadius: {
+    sm: 4,
+    md: 8,
+    lg: 12,
+    xl: 16,
   },
 };
 
