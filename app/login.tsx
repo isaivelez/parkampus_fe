@@ -1,15 +1,16 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
     Alert,
     Dimensions,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
@@ -19,273 +20,288 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
+// Tipos para el formulario
+type LoginFormData = {
+  email: string;
+  password: string;
+};
+
+// Credenciales hardcodeadas
+const ADMIN_CREDENTIALS = {
+  email: 'admin',
+  password: '1234'
+};
+
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleLogin = async () => {
-    // Validaciones básicas
-    if (!email.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
-      return;
+  
+  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
+    defaultValues: {
+      email: '',
+      password: ''
     }
+  });
 
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Por favor ingresa un correo electrónico válido');
-      return;
-    }
-
-    if (!password.trim()) {
-      Alert.alert('Error', 'Por favor ingresa tu contraseña');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    setIsLoading(true);
-
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      Alert.alert(
-        '¡Bienvenido! 🎉',
-        `Hola, ${email.split('@')[0]}!\nAcceso concedido a Parkampus`,
-        [
-          {
-            text: 'Continuar',
-            onPress: () => router.replace('/(tabs)'),
-          },
-        ]
-      );
+      // Verificar credenciales hardcodeadas
+      if (data.email === ADMIN_CREDENTIALS.email && data.password === ADMIN_CREDENTIALS.password) {
+        // Simular delay de red
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        Alert.alert(
+          '¡Bienvenido! 🎉',
+          'Acceso concedido a Parkampus',
+          [
+            {
+              text: 'Continuar',
+              onPress: () => router.replace('/(tabs)'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Credenciales incorrectas. Usa: admin / 1234');
+      }
     } catch (error) {
       Alert.alert('Error', 'Hubo un problema al iniciar sesión. Intenta de nuevo.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: isDark ? '#000000' : '#FFFFFF',
+    },
+    safeArea: {
+      flex: 1,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 32,
+      paddingVertical: 40,
+    },
+    // Logo y título
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 60,
+    },
+    logoIcon: {
+      marginBottom: 24,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '600',
+      color: isDark ? '#FFFFFF' : '#000000',
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: isDark ? '#A0A0A0' : '#666666',
+      textAlign: 'center',
+    },
+    // Formulario
+    formContainer: {
+      marginBottom: 40,
+    },
+    inputContainer: {
+      marginBottom: 20,
+    },
+    inputLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: isDark ? '#FFFFFF' : '#000000',
+      marginBottom: 8,
+    },
+    textInput: {
+      height: 50,
+      borderWidth: 1,
+      borderColor: isDark ? '#333333' : '#E0E0E0',
+      borderRadius: 8,
+      paddingHorizontal: 16,
+      fontSize: 16,
+      color: isDark ? '#FFFFFF' : '#000000',
+      backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+    },
+    textInputError: {
+      borderColor: '#EF4444',
+    },
+    errorText: {
+      color: '#EF4444',
+      fontSize: 14,
+      marginTop: 4,
+    },
+    textInputFocused: {
+      borderColor: ParkampusTheme.colors.main,
+      backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
+    },
+    // Botón de login
+    loginButton: {
+      height: 50,
+      backgroundColor: ParkampusTheme.colors.main,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    loginButtonDisabled: {
+      opacity: 0.6,
+    },
+    loginButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // Enlaces
+    linksContainer: {
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    linkButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    linkText: {
+      color: ParkampusTheme.colors.main,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    // Footer
+    footerContainer: {
+      marginTop: 40,
+      alignItems: 'center',
+    },
+    footerText: {
+      fontSize: 14,
+      color: isDark ? '#666666' : '#999999',
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+  });
+
   return (
-    <View className="flex-1">
-      {/* Background con gradiente */}
-      <LinearGradient
-        colors={isDark ? ['#1a1a1a', '#2d3748', '#1a1a1a'] : ['#EBF4FF', '#DBEAFE', '#F0F9FF']}
-        locations={[0, 0.5, 1]}
-        className="absolute inset-0"
-      />
-      
-      <SafeAreaView className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+          style={styles.keyboardView}
         >
           <ScrollView 
-            contentContainerStyle={{ flexGrow: 1, minHeight: height }}
+            contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
-            className="flex-1"
+            keyboardShouldPersistTaps="handled"
           >
-            {/* Header decorativo con gradiente */}
-            <LinearGradient
-              colors={isDark ? ['#0D47A1', '#1976D2', '#42A5F5'] : ['#0D47A1', '#1565C0', '#42A5F5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="h-40 rounded-b-3xl"
-            >
-              <View className="flex-1 justify-center items-center pt-4">
-                <Text className="text-white text-3xl font-bold tracking-wide mb-1">🚗 PARKAMPUS</Text>
-                <Text className="text-white/90 text-base font-medium">Universidad Pascual Bravo</Text>
-                <Text className="text-white/80 text-sm">Sede Pilarica</Text>
+            {/* Logo y título */}
+            <View style={styles.logoContainer}>
+              <View style={styles.logoIcon}>
+                <IconSymbol 
+                  name="car.fill" 
+                  size={60} 
+                  color={ParkampusTheme.colors.main}
+                />
               </View>
-            </LinearGradient>
+              <Text style={styles.title}>Login</Text>
+              <Text style={styles.subtitle}>
+                Bienvenido de vuelta a Parkampus
+              </Text>
+            </View>
 
-            {/* Contenido principal */}
-            <View className="flex-1 justify-center px-6 -mt-20">
-              
-              {/* Logo container con sombra mejorada */}
-              <View className="items-center mb-8">
-                <View className={`${isDark ? 'bg-gray-800/90' : 'bg-white/95'} rounded-3xl p-8 shadow-2xl border ${isDark ? 'border-gray-600/50' : 'border-white/20'}`}
-                  style={{
-                    shadowColor: isDark ? '#000' : '#0D47A1',
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: isDark ? 0.3 : 0.15,
-                    shadowRadius: 20,
-                    elevation: 10,
+            {/* Formulario */}
+            <View style={styles.formContainer}>
+              {/* Campo de email */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Usuario</Text>
+                <Controller
+                  control={control}
+                  name="email"
+                  rules={{ 
+                    required: 'El usuario es requerido',
                   }}
-                >
-                  <LinearGradient
-                    colors={['#42A5F5', '#0D47A1']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="rounded-full p-6 mb-4"
-                  >
-                    <IconSymbol 
-                      name="car.fill" 
-                      size={72} 
-                      color="#FFFFFF"
-                    />
-                  </LinearGradient>
-                  <Text className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-parkampus-main'} text-center mb-2`}>
-                    ¡Bienvenido!
-                  </Text>
-                  <Text className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-center text-base leading-5`}>
-                    Sistema de Gestión de{'\n'}
-                    Parqueaderos Universitarios
-                  </Text>
-                </View>
-              </View>
-
-              {/* Formulario con diseño premium */}
-              <View className={`${isDark ? 'bg-gray-800/90' : 'bg-white/95'} rounded-3xl p-8 shadow-2xl border ${isDark ? 'border-gray-600/50' : 'border-white/20'} mb-6`}
-                style={{
-                  shadowColor: isDark ? '#000' : '#0D47A1',
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: isDark ? 0.3 : 0.15,
-                  shadowRadius: 20,
-                  elevation: 10,
-                }}
-              >
-                
-                {/* Campo de email */}
-                <View className="mb-6">
-                  <Text className={`${isDark ? 'text-white' : 'text-parkampus-black'} font-bold mb-3 text-lg flex-row items-center`}>
-                    📧 Correo Electrónico
-                  </Text>
-                  <View className={`border-2 rounded-2xl transition-all duration-200 ${
-                    emailFocused 
-                      ? 'border-parkampus-main bg-blue-50/80 scale-105' 
-                      : isDark 
-                        ? 'border-gray-600 bg-gray-700/50' 
-                        : 'border-gray-200 bg-gray-50/50'
-                  }`}
-                    style={{
-                      shadowColor: emailFocused ? ParkampusTheme.colors.main : 'transparent',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: emailFocused ? 0.3 : 0,
-                      shadowRadius: 8,
-                      elevation: emailFocused ? 5 : 0,
-                    }}
-                  >
+                  render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`px-5 py-4 text-lg ${isDark ? 'text-white' : 'text-parkampus-black'} font-medium`}
-                      placeholder="tu-correo@pascualbravo.edu.co"
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
+                      style={[styles.textInput, errors.email && styles.textInputError]}
+                      placeholder="admin"
+                      placeholderTextColor={isDark ? '#666666' : '#999999'}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      onFocus={() => setEmailFocused(true)}
-                      onBlur={() => setEmailFocused(false)}
+                      autoComplete="username"
+                      textContentType="username"
                     />
-                  </View>
-                </View>
+                  )}
+                />
+                {errors.email && (
+                  <Text style={styles.errorText}>{errors.email.message}</Text>
+                )}
+              </View>
 
-                {/* Campo de contraseña */}
-                <View className="mb-8">
-                  <Text className={`${isDark ? 'text-white' : 'text-parkampus-black'} font-bold mb-3 text-lg`}>
-                    🔒 Contraseña
-                  </Text>
-                  <View className={`border-2 rounded-2xl transition-all duration-200 ${
-                    passwordFocused 
-                      ? 'border-parkampus-main bg-blue-50/80 scale-105' 
-                      : isDark 
-                        ? 'border-gray-600 bg-gray-700/50' 
-                        : 'border-gray-200 bg-gray-50/50'
-                  }`}
-                    style={{
-                      shadowColor: passwordFocused ? ParkampusTheme.colors.main : 'transparent',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: passwordFocused ? 0.3 : 0,
-                      shadowRadius: 8,
-                      elevation: passwordFocused ? 5 : 0,
-                    }}
-                  >
-                    <TextInput
-                      className={`px-5 py-4 text-lg ${isDark ? 'text-white' : 'text-parkampus-black'} font-medium`}
-                      placeholder="Mínimo 6 caracteres"
-                      placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry
-                      onFocus={() => setPasswordFocused(true)}
-                      onBlur={() => setPasswordFocused(false)}
-                    />
-                  </View>
-                </View>
-
-                {/* Botón de login con gradiente mejorado */}
-                <TouchableOpacity
-                  onPress={handleLogin}
-                  disabled={isLoading}
-                  activeOpacity={0.8}
-                  className={`rounded-2xl overflow-hidden ${isLoading ? 'opacity-50' : ''}`}
-                  style={{
-                    shadowColor: ParkampusTheme.colors.main,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: isLoading ? 0 : 0.4,
-                    shadowRadius: 12,
-                    elevation: isLoading ? 0 : 8,
+              {/* Campo de contraseña */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Contraseña</Text>
+                <Controller
+                  control={control}
+                  name="password"
+                  rules={{ 
+                    required: 'La contraseña es requerida',
                   }}
-                >
-                  <LinearGradient
-                    colors={isLoading ? ['#6B7280', '#4B5563'] : ['#0D47A1', '#1565C0', '#42A5F5']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    className="py-5 items-center justify-center"
-                  >
-                    <View className="flex-row items-center">
-                      {isLoading && (
-                        <View className="mr-3">
-                          <Text className="text-white text-xl">⏳</Text>
-                        </View>
-                      )}
-                      <Text className="text-white font-bold text-xl tracking-wide">
-                        {isLoading ? 'Verificando credenciales...' : '🚀 Iniciar Sesión'}
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={[styles.textInput, errors.password && styles.textInputError]}
+                      placeholder="1234"
+                      placeholderTextColor={isDark ? '#666666' : '#999999'}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      secureTextEntry
+                      autoComplete="password"
+                      textContentType="password"
+                    />
+                  )}
+                />
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password.message}</Text>
+                )}
               </View>
 
-              {/* Enlaces adicionales con mejor diseño */}
-              <View className="items-center space-y-4 mb-6">
-                <TouchableOpacity className="py-3 px-6 rounded-xl">
-                  <Text className={`${isDark ? 'text-parkampus-light' : 'text-parkampus-main'} font-bold text-lg`}>
-                    🔑 ¿Olvidaste tu contraseña?
-                  </Text>
-                </TouchableOpacity>
-                
-                <View className={`w-24 h-1 ${isDark ? 'bg-gray-600' : 'bg-gray-300'} rounded-full`} />
-                
-                <TouchableOpacity className="py-3 px-6 rounded-xl">
-                  <Text className={`${isDark ? 'text-parkampus-light' : 'text-parkampus-main'} font-bold text-lg`}>
-                    ✨ ¿No tienes cuenta? Regístrate
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {/* Botón de login */}
+              <TouchableOpacity
+                onPress={handleSubmit(onSubmit)}
+                disabled={isSubmitting}
+                style={[
+                  styles.loginButton,
+                  isSubmitting && styles.loginButtonDisabled
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.loginButtonText}>
+                  {isSubmitting ? 'Iniciando sesión...' : 'Login'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-              {/* Footer mejorado */}
-              <View className="items-center mt-4 pb-8">
-                <View className={`${isDark ? 'bg-gray-800/70' : 'bg-white/70'} rounded-2xl px-8 py-6 border ${isDark ? 'border-gray-600/30' : 'border-gray-200/30'}`}>
-                  <Text className={`${isDark ? 'text-gray-300' : 'text-gray-500'} text-base text-center leading-6 font-medium`}>
-                    🎓 Ingeniería de Software 2{'\n'}
-                    © 2025 Universidad Pascual Bravo
-                  </Text>
-                </View>
-              </View>
+            {/* Enlaces */}
+            <View style={styles.linksContainer}>
+              <TouchableOpacity style={styles.linkButton}>
+                <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.linkButton}>
+                <Text style={styles.linkText}>Crear una cuenta</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>
+                Ingeniería de Software 2{'\n'}
+                © 2025 Universidad Pascual Bravo
+              </Text>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
