@@ -16,6 +16,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { loginUser, ApiError } from "@/services/userService";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Tipos para el formulario
 type LoginFormData = {
@@ -23,16 +25,11 @@ type LoginFormData = {
   password: string;
 };
 
-// Credenciales hardcodeadas
-const ADMIN_CREDENTIALS = {
-  email: "admin",
-  password: "1234",
-};
-
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [showPassword, setShowPassword] = useState(false);
+  const { setUser } = useAuth();
 
   const {
     control,
@@ -47,28 +44,34 @@ export default function LoginScreen() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      // Verificar credenciales hardcodeadas
-      if (
-        data.email === ADMIN_CREDENTIALS.email &&
-        data.password === ADMIN_CREDENTIALS.password
-      ) {
-        // Simular delay de red
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Llamar al servicio de login
+      const response = await loginUser({
+        email: data.email,
+        password: data.password,
+      });
 
-        Alert.alert("¡Bienvenido! 🎉", "Acceso concedido a Parkampus", [
-          {
-            text: "Continuar",
-            onPress: () => router.replace("/(tabs)"),
-          },
-        ]);
-      } else {
-        Alert.alert("Error", "Credenciales incorrectas. Usa: admin / 1234");
+      // Si el login es exitoso
+      if (response.success && response.data?.user) {
+        // Guardar el usuario en el contexto
+        setUser(response.data.user);
+
+        // Mostrar mensaje de bienvenida
+        Alert.alert(
+          "¡Bienvenido! 🎉",
+          `${response.data.user.first_name} ${response.data.user.last_name}\n${response.message}`,
+          [
+            {
+              text: "Continuar",
+              onPress: () => router.replace("/(tabs)"),
+            },
+          ]
+        );
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Hubo un problema al iniciar sesión. Intenta de nuevo."
-      );
+      // Manejar errores usando el tipo ApiError
+      const apiError = error as ApiError;
+      Alert.alert("Error de autenticación", apiError.message);
+      console.error("Error en el login:", error);
     }
   };
 
@@ -238,12 +241,16 @@ export default function LoginScreen() {
             <View style={styles.formContainer}>
               {/* Campo de usuario */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Usuario</Text>
+                <Text style={styles.inputLabel}>Correo electrónico</Text>
                 <Controller
                   control={control}
                   name="email"
                   rules={{
-                    required: "El usuario es requerido",
+                    required: "El correo es requerido",
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: "Ingresa un correo válido",
+                    },
                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View
@@ -252,18 +259,19 @@ export default function LoginScreen() {
                         errors.email && styles.inputWrapperError,
                       ]}
                     >
-                      <Text style={styles.inputIcon}>👤</Text>
+                      <Text style={styles.inputIcon}>�</Text>
                       <TextInput
                         style={styles.textInput}
-                        placeholder="admin"
+                        placeholder="usuario@pascualbravo.edu.co"
                         placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
                         autoCapitalize="none"
                         autoCorrect={false}
-                        autoComplete="username"
-                        textContentType="username"
+                        keyboardType="email-address"
+                        autoComplete="email"
+                        textContentType="emailAddress"
                       />
                     </View>
                   )}
@@ -294,7 +302,7 @@ export default function LoginScreen() {
                       <Text style={styles.inputIcon}>🔒</Text>
                       <TextInput
                         style={styles.textInput}
-                        placeholder="1234"
+                        placeholder="Ingresa tu contraseña"
                         placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
                         value={value}
                         onChangeText={onChange}

@@ -7,6 +7,7 @@ import { useForm, Controller } from "react-hook-form";
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -38,6 +39,7 @@ export default function RegisterScreen() {
   const isDark = colorScheme === "dark";
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRolPicker, setShowRolPicker] = useState(false);
 
   const {
     control,
@@ -56,6 +58,14 @@ export default function RegisterScreen() {
   });
 
   const password = watch("password");
+  const selectedRol = watch("rol");
+
+  // Opciones de rol
+  const roleOptions = [
+    { label: "Celador", value: "celador", emoji: "👮" },
+    { label: "Estudiante", value: "estudiante", emoji: "🎓" },
+    { label: "Empleado", value: "empleado", emoji: "💼" },
+  ];
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -210,6 +220,102 @@ export default function RegisterScreen() {
     picker: {
       height: 48,
       color: isDark ? "#FFFFFF" : "#111827",
+    },
+    // Selector iOS personalizado
+    customPickerButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: 1,
+      borderColor: isDark ? "#374151" : "#D1D5DB",
+      borderRadius: 8,
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      paddingHorizontal: 12,
+      height: 48,
+    },
+    customPickerButtonError: {
+      borderColor: "#DC2626",
+      backgroundColor: isDark ? "#1F1416" : "#FEF2F2",
+    },
+    customPickerButtonContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    customPickerEmoji: {
+      fontSize: 20,
+      marginRight: 8,
+    },
+    customPickerText: {
+      fontSize: 15,
+      color: isDark ? "#FFFFFF" : "#111827",
+    },
+    customPickerPlaceholder: {
+      fontSize: 15,
+      color: isDark ? "#6B7280" : "#9CA3AF",
+    },
+    customPickerArrow: {
+      fontSize: 16,
+      color: isDark ? "#9CA3AF" : "#6B7280",
+    },
+    // Modal para iOS
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "flex-end",
+    },
+    modalContent: {
+      backgroundColor: isDark ? "#1F2937" : "#FFFFFF",
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: Platform.OS === "ios" ? 34 : 20,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: isDark ? "#FFFFFF" : "#1F2937",
+    },
+    modalCloseButton: {
+      padding: 4,
+    },
+    modalCloseText: {
+      fontSize: 16,
+      color: ParkampusTheme.colors.main,
+      fontWeight: "600",
+    },
+    modalOptions: {
+      maxHeight: 300,
+    },
+    modalOption: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? "#374151" : "#E5E7EB",
+    },
+    modalOptionSelected: {
+      backgroundColor: isDark ? "#374151" : "#F3F4F6",
+    },
+    modalOptionEmoji: {
+      fontSize: 24,
+      marginRight: 12,
+    },
+    modalOptionText: {
+      fontSize: 16,
+      color: isDark ? "#FFFFFF" : "#1F2937",
+      flex: 1,
+    },
+    modalOptionCheck: {
+      fontSize: 20,
+      color: ParkampusTheme.colors.main,
     },
     helperText: {
       fontSize: 12,
@@ -466,24 +572,124 @@ export default function RegisterScreen() {
                     required: "Debes seleccionar un rol",
                   }}
                   render={({ field: { onChange, value } }) => (
-                    <View
-                      style={[
-                        styles.pickerContainer,
-                        errors.rol && styles.pickerContainerError,
-                      ]}
-                    >
-                      <Picker
-                        selectedValue={value}
-                        onValueChange={onChange}
-                        style={styles.picker}
-                        dropdownIconColor={isDark ? "#FFFFFF" : "#111827"}
-                      >
-                        <Picker.Item label="Selecciona tu rol" value="" />
-                        <Picker.Item label="Celador" value="celador" />
-                        <Picker.Item label="Estudiante" value="estudiante" />
-                        <Picker.Item label="Empleado" value="empleado" />
-                      </Picker>
-                    </View>
+                    <>
+                      {Platform.OS === "ios" ? (
+                        // Selector personalizado para iOS
+                        <TouchableOpacity
+                          style={[
+                            styles.customPickerButton,
+                            errors.rol && styles.customPickerButtonError,
+                          ]}
+                          onPress={() => setShowRolPicker(true)}
+                        >
+                          <View style={styles.customPickerButtonContent}>
+                            {value ? (
+                              <>
+                                <Text style={styles.customPickerEmoji}>
+                                  {roleOptions.find((r) => r.value === value)
+                                    ?.emoji || ""}
+                                </Text>
+                                <Text style={styles.customPickerText}>
+                                  {roleOptions.find((r) => r.value === value)
+                                    ?.label || ""}
+                                </Text>
+                              </>
+                            ) : (
+                              <Text style={styles.customPickerPlaceholder}>
+                                Selecciona tu rol
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={styles.customPickerArrow}>▼</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        // Picker nativo para Android
+                        <View
+                          style={[
+                            styles.pickerContainer,
+                            errors.rol && styles.pickerContainerError,
+                          ]}
+                        >
+                          <Picker
+                            selectedValue={value}
+                            onValueChange={onChange}
+                            style={styles.picker}
+                            dropdownIconColor={isDark ? "#FFFFFF" : "#111827"}
+                          >
+                            <Picker.Item label="Selecciona tu rol" value="" />
+                            <Picker.Item label="👮 Celador" value="celador" />
+                            <Picker.Item
+                              label="🎓 Estudiante"
+                              value="estudiante"
+                            />
+                            <Picker.Item label="💼 Empleado" value="empleado" />
+                          </Picker>
+                        </View>
+                      )}
+
+                      {/* Modal para iOS */}
+                      {Platform.OS === "ios" && (
+                        <Modal
+                          visible={showRolPicker}
+                          transparent={true}
+                          animationType="slide"
+                          onRequestClose={() => setShowRolPicker(false)}
+                        >
+                          <TouchableOpacity
+                            style={styles.modalOverlay}
+                            activeOpacity={1}
+                            onPress={() => setShowRolPicker(false)}
+                          >
+                            <View
+                              style={styles.modalContent}
+                              onStartShouldSetResponder={() => true}
+                            >
+                              <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>
+                                  Selecciona tu rol
+                                </Text>
+                                <TouchableOpacity
+                                  style={styles.modalCloseButton}
+                                  onPress={() => setShowRolPicker(false)}
+                                >
+                                  <Text style={styles.modalCloseText}>
+                                    Listo
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                              <ScrollView style={styles.modalOptions}>
+                                {roleOptions.map((option) => (
+                                  <TouchableOpacity
+                                    key={option.value}
+                                    style={[
+                                      styles.modalOption,
+                                      value === option.value &&
+                                        styles.modalOptionSelected,
+                                    ]}
+                                    onPress={() => {
+                                      onChange(option.value);
+                                      setShowRolPicker(false);
+                                    }}
+                                  >
+                                    <Text style={styles.modalOptionEmoji}>
+                                      {option.emoji}
+                                    </Text>
+                                    <Text style={styles.modalOptionText}>
+                                      {option.label}
+                                    </Text>
+                                    {value === option.value && (
+                                      <Text style={styles.modalOptionCheck}>
+                                        ✓
+                                      </Text>
+                                    )}
+                                  </TouchableOpacity>
+                                ))}
+                              </ScrollView>
+                            </View>
+                          </TouchableOpacity>
+                        </Modal>
+                      )}
+                    </>
                   )}
                 />
                 {errors.rol && (

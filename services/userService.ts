@@ -27,6 +27,29 @@ export interface RegisterUserResponse {
   };
 }
 
+export interface LoginUserData {
+  email: string;
+  password: string;
+}
+
+export interface User {
+  _id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  user_type: "celador" | "estudiante" | "empleado";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoginUserResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    user: User;
+  };
+}
+
 export interface ApiError {
   message: string;
   status?: number;
@@ -60,6 +83,51 @@ export const registerUser = async (
             error.response.data?.message ||
             error.response.data?.error ||
             `Error del servidor: ${error.response.status}`,
+          status: error.response.status,
+        } as ApiError;
+      } else if (error.request) {
+        // La petición se hizo pero no hubo respuesta
+        throw {
+          message: "No se pudo conectar con el servidor. Verifica tu conexión.",
+        } as ApiError;
+      }
+    }
+
+    // Error desconocido
+    throw {
+      message: "Ocurrió un error inesperado. Intenta de nuevo.",
+    } as ApiError;
+  }
+};
+
+/**
+ * Inicia sesión de un usuario
+ */
+export const loginUser = async (
+  data: LoginUserData
+): Promise<LoginUserResponse> => {
+  try {
+    const response = await axios.post<LoginUserResponse>(
+      API_ENDPOINTS.LOGIN,
+      data,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        timeout: API_TIMEOUT,
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // El servidor respondió con un error
+        throw {
+          message:
+            error.response.data?.message ||
+            error.response.data?.error ||
+            "Credenciales incorrectas",
           status: error.response.status,
         } as ApiError;
       } else if (error.request) {
