@@ -1,24 +1,21 @@
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ParkampusTheme } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { router } from 'expo-router';
-import React from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ParkampusTheme } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import {
-    Alert,
-    Dimensions,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-const { width, height } = Dimensions.get('window');
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Tipos para el formulario
 type LoginFormData = {
@@ -28,50 +25,57 @@ type LoginFormData = {
 
 // Credenciales hardcodeadas
 const ADMIN_CREDENTIALS = {
-  email: 'admin',
-  password: '1234'
+  email: "admin",
+  password: "1234",
 };
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  
-  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
+  const isDark = colorScheme === "dark";
+  const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
     defaultValues: {
-      email: '',
-      password: ''
-    }
+      email: "",
+      password: "",
+    },
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       // Verificar credenciales hardcodeadas
-      if (data.email === ADMIN_CREDENTIALS.email && data.password === ADMIN_CREDENTIALS.password) {
+      if (
+        data.email === ADMIN_CREDENTIALS.email &&
+        data.password === ADMIN_CREDENTIALS.password
+      ) {
         // Simular delay de red
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        Alert.alert(
-          '¡Bienvenido! 🎉',
-          'Acceso concedido a Parkampus',
-          [
-            {
-              text: 'Continuar',
-              onPress: () => router.replace('/(tabs)'),
-            },
-          ]
-        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        Alert.alert("¡Bienvenido! 🎉", "Acceso concedido a Parkampus", [
+          {
+            text: "Continuar",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ]);
       } else {
-        Alert.alert('Error', 'Credenciales incorrectas. Usa: admin / 1234');
+        Alert.alert("Error", "Credenciales incorrectas. Usa: admin / 1234");
       }
     } catch (error) {
-      Alert.alert('Error', 'Hubo un problema al iniciar sesión. Intenta de nuevo.');
+      Alert.alert(
+        "Error",
+        "Hubo un problema al iniciar sesión. Intenta de nuevo."
+      );
     }
   };
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#000000' : '#FFFFFF',
+      backgroundColor: isDark ? "#000000" : "#F5F7FA",
     },
     safeArea: {
       flex: 1,
@@ -81,128 +85,148 @@ export default function LoginScreen() {
     },
     scrollContainer: {
       flexGrow: 1,
-      justifyContent: 'center',
-      paddingHorizontal: 32,
-      paddingVertical: 40,
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 32,
     },
-    // Logo y título
-    logoContainer: {
-      alignItems: 'center',
-      marginBottom: 60,
+    // Header
+    headerContainer: {
+      alignItems: "center",
+      marginBottom: 40,
     },
-    logoIcon: {
-      marginBottom: 24,
+    iconContainer: {
+      width: 100,
+      height: 100,
+      borderRadius: 20,
+      backgroundColor: ParkampusTheme.colors.main,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 16,
     },
     title: {
-      fontSize: 28,
-      fontWeight: '600',
-      color: isDark ? '#FFFFFF' : '#000000',
-      marginBottom: 8,
+      fontSize: 24,
+      fontWeight: "600",
+      color: isDark ? "#FFFFFF" : "#1F2937",
+      marginBottom: 4,
     },
     subtitle: {
       fontSize: 16,
-      color: isDark ? '#A0A0A0' : '#666666',
-      textAlign: 'center',
+      color: isDark ? "#9CA3AF" : "#6B7280",
+      textAlign: "center",
     },
     // Formulario
     formContainer: {
-      marginBottom: 40,
+      backgroundColor: isDark ? "#1F2937" : "#FFFFFF",
+      borderRadius: 12,
+      padding: 20,
+      marginBottom: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
     },
     inputContainer: {
-      marginBottom: 20,
+      marginBottom: 16,
     },
     inputLabel: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: isDark ? '#FFFFFF' : '#000000',
+      fontSize: 14,
+      fontWeight: "600",
+      color: isDark ? "#F3F4F6" : "#374151",
       marginBottom: 8,
     },
-    textInput: {
-      height: 50,
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
       borderWidth: 1,
-      borderColor: isDark ? '#333333' : '#E0E0E0',
+      borderColor: isDark ? "#374151" : "#D1D5DB",
       borderRadius: 8,
-      paddingHorizontal: 16,
-      fontSize: 16,
-      color: isDark ? '#FFFFFF' : '#000000',
-      backgroundColor: isDark ? '#1A1A1A' : '#FAFAFA',
+      backgroundColor: isDark ? "#111827" : "#F9FAFB",
+      paddingHorizontal: 12,
     },
-    textInputError: {
-      borderColor: '#EF4444',
+    inputWrapperError: {
+      borderColor: "#DC2626",
+      backgroundColor: isDark ? "#1F1416" : "#FEF2F2",
+    },
+    inputIcon: {
+      marginRight: 8,
+    },
+    textInput: {
+      flex: 1,
+      height: 48,
+      fontSize: 15,
+      color: isDark ? "#FFFFFF" : "#111827",
+    },
+    eyeButton: {
+      padding: 4,
     },
     errorText: {
-      color: '#EF4444',
-      fontSize: 14,
+      fontSize: 13,
+      color: "#DC2626",
       marginTop: 4,
     },
-    textInputFocused: {
-      borderColor: ParkampusTheme.colors.main,
-      backgroundColor: isDark ? '#1A1A1A' : '#FFFFFF',
-    },
-    // Botón de login
-    loginButton: {
+    // Botón
+    submitButton: {
       height: 50,
       backgroundColor: ParkampusTheme.colors.main,
       borderRadius: 8,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       marginTop: 8,
+      shadowColor: ParkampusTheme.colors.main,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
     },
-    loginButtonDisabled: {
+    submitButtonDisabled: {
       opacity: 0.6,
+      shadowOpacity: 0,
+      elevation: 0,
     },
-    loginButtonText: {
-      color: '#FFFFFF',
+    submitButtonText: {
+      color: "#FFFFFF",
       fontSize: 16,
-      fontWeight: '600',
-    },
-    // Enlaces
-    linksContainer: {
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    linkButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    },
-    linkText: {
-      color: ParkampusTheme.colors.main,
-      fontSize: 16,
-      fontWeight: '500',
+      fontWeight: "600",
     },
     // Footer
     footerContainer: {
-      marginTop: 40,
-      alignItems: 'center',
+      alignItems: "center",
+      marginTop: 24,
     },
     footerText: {
-      fontSize: 14,
-      color: isDark ? '#666666' : '#999999',
-      textAlign: 'center',
-      lineHeight: 20,
+      fontSize: 15,
+      color: isDark ? "#9CA3AF" : "#6B7280",
+    },
+    linkButton: {
+      marginTop: 8,
+    },
+    linkText: {
+      fontSize: 15,
+      color: ParkampusTheme.colors.main,
+      fontWeight: "600",
+    },
+    divider: {
+      marginVertical: 16,
     },
   });
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Logo y título */}
-            <View style={styles.logoContainer}>
-              <View style={styles.logoIcon}>
-                <IconSymbol 
-                  name="car.fill" 
-                  size={60} 
-                  color={ParkampusTheme.colors.main}
-                />
+            {/* Header */}
+            <View style={styles.headerContainer}>
+              <View style={styles.iconContainer}>
+                <IconSymbol name="car.fill" size={50} color="#FFFFFF" />
               </View>
               <Text style={styles.title}>Login</Text>
               <Text style={styles.subtitle}>
@@ -212,32 +236,42 @@ export default function LoginScreen() {
 
             {/* Formulario */}
             <View style={styles.formContainer}>
-              {/* Campo de email */}
+              {/* Campo de usuario */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Usuario</Text>
                 <Controller
                   control={control}
                   name="email"
-                  rules={{ 
-                    required: 'El usuario es requerido',
+                  rules={{
+                    required: "El usuario es requerido",
                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[styles.textInput, errors.email && styles.textInputError]}
-                      placeholder="admin"
-                      placeholderTextColor={isDark ? '#666666' : '#999999'}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      autoComplete="username"
-                      textContentType="username"
-                    />
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        errors.email && styles.inputWrapperError,
+                      ]}
+                    >
+                      <Text style={styles.inputIcon}>👤</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="admin"
+                        placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete="username"
+                        textContentType="username"
+                      />
+                    </View>
                   )}
                 />
                 {errors.email && (
-                  <Text style={styles.errorText}>{errors.email.message}</Text>
+                  <Text style={styles.errorText}>
+                    ❌ {errors.email.message}
+                  </Text>
                 )}
               </View>
 
@@ -247,25 +281,43 @@ export default function LoginScreen() {
                 <Controller
                   control={control}
                   name="password"
-                  rules={{ 
-                    required: 'La contraseña es requerida',
+                  rules={{
+                    required: "La contraseña es requerida",
                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      style={[styles.textInput, errors.password && styles.textInputError]}
-                      placeholder="1234"
-                      placeholderTextColor={isDark ? '#666666' : '#999999'}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      autoComplete="password"
-                      textContentType="password"
-                    />
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        errors.password && styles.inputWrapperError,
+                      ]}
+                    >
+                      <Text style={styles.inputIcon}>🔒</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="1234"
+                        placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        secureTextEntry={!showPassword}
+                        autoComplete="password"
+                        textContentType="password"
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                      >
+                        <Text style={{ fontSize: 20 }}>
+                          {showPassword ? "👁️" : "👁️‍🗨️"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 />
                 {errors.password && (
-                  <Text style={styles.errorText}>{errors.password.message}</Text>
+                  <Text style={styles.errorText}>
+                    ❌ {errors.password.message}
+                  </Text>
                 )}
               </View>
 
@@ -274,34 +326,32 @@ export default function LoginScreen() {
                 onPress={handleSubmit(onSubmit)}
                 disabled={isSubmitting}
                 style={[
-                  styles.loginButton,
-                  isSubmitting && styles.loginButtonDisabled
+                  styles.submitButton,
+                  isSubmitting && styles.submitButtonDisabled,
                 ]}
                 activeOpacity={0.8}
               >
-                <Text style={styles.loginButtonText}>
-                  {isSubmitting ? 'Iniciando sesión...' : 'Login'}
+                <Text style={styles.submitButtonText}>
+                  {isSubmitting ? "Iniciando sesión..." : "Login"}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Enlaces */}
-            <View style={styles.linksContainer}>
+            <View style={styles.footerContainer}>
               <TouchableOpacity style={styles.linkButton}>
                 <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.linkButton}>
+
+              <View style={styles.divider} />
+
+              <Text style={styles.footerText}>¿No tienes una cuenta?</Text>
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => router.push("/register")}
+              >
                 <Text style={styles.linkText}>Crear una cuenta</Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footerContainer}>
-              <Text style={styles.footerText}>
-                Ingeniería de Software 2{'\n'}
-                © 2025 Universidad Pascual Bravo
-              </Text>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
