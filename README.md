@@ -26,7 +26,8 @@
 - 📅 **Reservar espacios** con anticipación
 - 🗺️ **Localizar parqueaderos** dentro del campus
 - 📊 **Gestionar** el uso eficiente de los espacios disponibles
-- 🔔 **Recibir notificaciones** sobre el estado de las reservas
+- 🔔 **Recibir notificaciones push** en tiempo real sobre alertas y disponibilidad
+- ⚡ **Sistema de notificaciones síncronas** - Las alertas llegan instantáneamente
 
 ### 🎯 Objetivos
 
@@ -37,11 +38,60 @@
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## � Notificaciones Push en Tiempo Real
+
+Parkampus implementa un sistema completo de **notificaciones push síncronas e instantáneas** que permite a los celadores enviar alertas que llegan inmediatamente a todos los estudiantes y empleados registrados.
+
+### ¿Cómo funciona?
+
+1. **Usuario inicia sesión** → La app solicita permisos de notificaciones
+2. **Se obtiene el token** → Se genera un `ExponentPushToken` único para el dispositivo
+3. **Token se registra en el backend** → Se almacena asociado al usuario
+4. **Listeners activos** → La app escucha continuamente notificaciones
+5. **Celador crea alerta** → El backend envía notificación vía Expo Push Service
+6. **Notificación llega instantáneamente** → Todos los usuarios la reciben al mismo tiempo
+
+### Tipos de notificaciones:
+
+- 🔔 **Broadcast** - A todos los usuarios registrados
+- 👥 **Por tipo de usuario** - Solo a estudiantes, empleados o celadores
+- 🎯 **Específicas** - A usuarios seleccionados
+- 📊 **Con datos adicionales** - Incluyen información para navegación en la app
+
+### Arquitectura implementada:
+
+```
+Backend (Node.js) 
+    ↓
+Expo Push Service 
+    ↓
+NotificationContext (React Context)
+    ↓
+Listeners activos
+    ↓
+UI actualizada en tiempo real
+```
+
+### 📖 Documentación completa:
+
+👉 **[Ver guía completa de configuración](./NOTIFICATIONS_SETUP.md)**
+
+La guía incluye:
+- Configuración paso a paso
+- Flujo completo de notificaciones
+- Testing y troubleshooting
+- Ejemplos de uso
+- Integración con el backend
+
+---
+
+## �🛠️ Tecnologías Utilizadas
 
 - **Frontend:** React Native con Expo
 - **Lenguaje:** TypeScript
 - **Navegación:** Expo Router
+- **Notificaciones:** Expo Notifications + expo-server-sdk
+- **State Management:** React Context API
 - **UI/UX:** Componentes nativos y personalizados
 - **Desarrollo:** Expo CLI & VS Code
 

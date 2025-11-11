@@ -1,26 +1,15 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { saveNotificationToken } from '@/services/alertService';
 import { ApiError, getParkingLots, ParkingLot, updateParkingLot } from '@/services/parkingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Configurar el comportamiento de las notificaciones
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
 // Tipo para el formulario de edición
 type ParkingLotFormData = {
@@ -30,6 +19,7 @@ type ParkingLotFormData = {
 
 export default function CeldasScreen() {
   const { user, logout } = useAuth();
+  const { registerForNotifications, lastNotification, unreadCount } = useNotifications();
   const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,7 +28,7 @@ export default function CeldasScreen() {
 
   const isCelador = user?.user_type === 'celador';
 
-  // Función para solicitar permisos de notificaciones
+  // Función para solicitar permisos de notificaciones usando nuestro servicio
   const requestNotificationPermissions = async () => {
     try {
       // Verificar si ya se pidieron permisos antes
@@ -48,59 +38,29 @@ export default function CeldasScreen() {
         return;
       }
 
-      // Obtener el estado actual de los permisos
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      // Si no se han otorgado permisos, pedirlos
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
       // Guardar que ya se pidieron permisos
       await AsyncStorage.setItem('notificationPermissionAsked', 'true');
       setNotificationPermissionAsked(true);
 
-      if (finalStatus === 'granted') {
-        // Obtener el token de notificación push
-        try {
-          const tokenData = await Notifications.getExpoPushTokenAsync({
-            projectId: 'parkampus-app', // Cambia esto por tu project ID de Expo
-          });
-          const token = tokenData.data;
-
-          // Guardar el token en el backend si el usuario está autenticado
-          if (user && user._id) {
-            try {
-              // Convertir _id de string a number si es necesario
-              const userId = parseInt(user._id, 10);
-              await saveNotificationToken(token, userId);
-              console.log('Token de notificación guardado exitosamente');
-            } catch (error) {
-              console.error('Error al guardar el token en el servidor:', error);
-            }
-          }
-
+      // Registrar para notificaciones usando nuestro nuevo servicio
+      if (user && user._id) {
+        const token = await registerForNotifications(user._id);
+        
+        if (token) {
+          console.log('✅ Usuario registrado para notificaciones push:', token);
+          
           Alert.alert(
             '🔔 Notificaciones activadas',
-            'Recibirás notificaciones sobre la disponibilidad del parqueadero y alertas importantes',
+            'Recibirás alertas instantáneas sobre disponibilidad de parqueadero y alertas del celador',
             [{ text: 'Entendido' }]
           );
-        } catch (error) {
-          console.error('Error al obtener el token de notificación:', error);
+        } else {
           Alert.alert(
-            '⚠️ Advertencia',
-            'Las notificaciones están activadas pero hubo un problema técnico. Intenta nuevamente más tarde.',
+            '⚠️ Notificaciones desactivadas',
+            'Puedes activarlas más tarde desde la configuración de tu dispositivo',
             [{ text: 'Entendido' }]
           );
         }
-      } else {
-        Alert.alert(
-          '⚠️ Notificaciones desactivadas',
-          'Puedes activarlas más tarde desde la configuración de tu dispositivo',
-          [{ text: 'Entendido' }]
-        );
       }
     } catch (error) {
       console.error('Error al solicitar permisos de notificaciones:', error);

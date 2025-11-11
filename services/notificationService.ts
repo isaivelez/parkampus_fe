@@ -1,190 +1,272 @@
-/**
- * Servicio de Notificaciones Push
- * Maneja la recepción y procesamiento de notificaciones en tiempo real
- */
-
 import * as Notifications from 'expo-notifications';
-import { Alert } from 'react-native';
-import { router } from 'expo-router';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-// Tipos de alertas que pueden recibirse
-export type AlertType = 
-  | 'low_availability' 
-  | 'security' 
-  | 'mandatory_evacuation' 
-  | 'night_closure';
-
-// Estructura de datos de una notificación de alerta
-export interface AlertNotificationData extends Record<string, unknown> {
-  alertType?: AlertType;
-  message?: string;
-  timestamp?: string;
-}
+// URL base del backend - CAMBIAR A TU IP LOCAL O SERVIDOR
+const API_BASE_URL = 'http://192.168.40.67:3000/api';
 
 /**
- * Obtiene y retorna el token de Expo Push Notification
- * @param projectId ID del proyecto en Expo
- * @returns Token de notificación o null si hay error
+ * Configurar el comportamiento de las notificaciones cuando se reciben
  */
-export async function getExpoPushToken(projectId: string): Promise<string | null> {
-  try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
-    // Si no tiene permisos, pedirlos
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
+class NotificationService {
+  /**
+   * Registrar push token para notificaciones
+   * @param {string} userId - ID del usuario en el backend
+   * @returns {Promise<string|null>} Token de Expo Push o null si falla
+   */
+  static async registerForPushNotifications(userId) {
+    try {
+      // Verificar si es un dispositivo físico
+      if (!Device.isDevice) {
+        console.warn('⚠️ Las notificaciones push solo funcionan en dispositivos físicos');
+        // En desarrollo/simulador, retornamos un token de prueba
+        if (__DEV__) {
+          console.log('🔧 Modo desarrollo: usando token de prueba');
+          return 'ExponentPushToken[SIMULATOR_TEST_TOKEN]';
+        }
+        return null;
+      }
 
-    // Si no se otorgaron permisos, retornar null
-    if (finalStatus !== 'granted') {
-      console.log('Permisos de notificación no otorgados');
+      // Solicitar permisos
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.error('❌ Permiso de notificaciones denegado');
+        alert('Se necesitan permisos de notificación para recibir alertas de estacionamiento');
+        return null;
+      }
+
+      // Obtener el token de Expo Push
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      
+      let token;
+      try {
+        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      } catch (error) {
+        // Si falla con projectId, intentar sin él (para desarrollo)
+        console.warn('⚠️ Error con projectId, intentando sin él:', error.message);
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+      }
+
+      console.log('📱 Token de notificaciones obtenido:', token);
+
+      // Registrar el token en el backend
+      if (userId) {
+        await this.registerTokenInBackend(userId, token);
+      }
+
+      // Configurar canal de notificaciones para Android
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Alertas de Parkampus',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+        });
+      }
+
+      return token;
+    } catch (error) {
+      console.error('❌ Error al registrar notificaciones push:', error);
       return null;
     }
+  }
 
-    // Obtener el token
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId,
+  /**
+   * Registrar token en el backend
+   * @param {string} userId - ID del usuario
+   * @param {string} token - Token de Expo Push
+   */
+  static async registerTokenInBackend(userId, token) {
+    try {
+      console.log(`📤 Registrando token en backend para usuario: ${userId}`);
+
+      const response = await fetch(`${API_BASE_URL}/notifications/register-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          expo_push_token: token,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('✅ Token registrado exitosamente en el backend');
+        return data;
+      } else {
+        console.error('❌ Error al registrar token:', data.message);
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error al comunicarse con el backend:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Configurar listeners para recibir notificaciones
+   * @param {Function} onNotificationReceived - Callback cuando se recibe una notificación
+   * @param {Function} onNotificationTapped - Callback cuando se toca una notificación
+   * @returns {Object} Objeto con funciones para remover los listeners
+   */
+  static setupNotificationListeners(onNotificationReceived, onNotificationTapped) {
+    // Listener para cuando llega una notificación (app en foreground)
+    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('🔔 Notificación recibida:', notification);
+      
+      const { title, body, data } = notification.request.content;
+      
+      if (onNotificationReceived) {
+        onNotificationReceived({
+          title,
+          message: body,
+          data,
+          notification,
+        });
+      }
     });
 
-    return tokenData.data;
-  } catch (error) {
-    console.error('Error al obtener token de notificación:', error);
-    return null;
+    // Listener para cuando el usuario toca una notificación
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log('👆 Notificación tocada:', response);
+      
+      const { title, body, data } = response.notification.request.content;
+      
+      if (onNotificationTapped) {
+        onNotificationTapped({
+          title,
+          message: body,
+          data,
+          response,
+        });
+      }
+    });
+
+    // Retornar función para limpiar los listeners
+    return {
+      remove: () => {
+        Notifications.removeNotificationSubscription(notificationListener);
+        Notifications.removeNotificationSubscription(responseListener);
+      },
+      notificationListener,
+      responseListener,
+    };
   }
-}
 
-/**
- * Maneja una notificación recibida mientras la app está en primer plano
- * @param notification Notificación recibida
- */
-export function handleNotificationReceived(notification: Notifications.Notification) {
-  const data = notification.request.content.data as AlertNotificationData;
-  
-  console.log('📱 Notificación recibida:', {
-    title: notification.request.content.title,
-    body: notification.request.content.body,
-    data,
-  });
-
-  // Si es una alerta de tipo crítico, mostrar alerta inmediata
-  if (data.alertType === 'security' || data.alertType === 'mandatory_evacuation') {
-    Alert.alert(
-      notification.request.content.title || '🚨 Alerta Importante',
-      notification.request.content.body || '',
-      [
-        {
-          text: 'Entendido',
-          style: 'default',
+  /**
+   * Mostrar notificación local (para pruebas)
+   * @param {string} title - Título de la notificación
+   * @param {string} message - Mensaje de la notificación
+   * @param {Object} data - Datos adicionales
+   */
+  static async showLocalNotification(title, message, data = {}) {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body: message,
+          data,
+          sound: true,
         },
-      ],
-      { cancelable: false }
-    );
+        trigger: null, // Mostrar inmediatamente
+      });
+    } catch (error) {
+      console.error('❌ Error al mostrar notificación local:', error);
+    }
+  }
+
+  /**
+   * Obtener historial de notificaciones del backend
+   * @param {string} userId - ID del usuario (opcional)
+   * @returns {Promise<Array>} Array de notificaciones
+   */
+  static async getNotificationHistory(userId = null) {
+    try {
+      const url = userId
+        ? `${API_BASE_URL}/notifications?user_id=${userId}`
+        : `${API_BASE_URL}/notifications`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.success) {
+        return data.data;
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error al obtener historial de notificaciones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancelar todas las notificaciones programadas
+   */
+  static async cancelAllNotifications() {
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('🗑️ Todas las notificaciones programadas han sido canceladas');
+    } catch (error) {
+      console.error('❌ Error al cancelar notificaciones:', error);
+    }
+  }
+
+  /**
+   * Obtener badge count actual
+   * @returns {Promise<number>}
+   */
+  static async getBadgeCount() {
+    try {
+      return await Notifications.getBadgeCountAsync();
+    } catch (error) {
+      console.error('❌ Error al obtener badge count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Establecer badge count
+   * @param {number} count - Número a mostrar en el badge
+   */
+  static async setBadgeCount(count) {
+    try {
+      await Notifications.setBadgeCountAsync(count);
+    } catch (error) {
+      console.error('❌ Error al establecer badge count:', error);
+    }
+  }
+
+  /**
+   * Limpiar badge count
+   */
+  static async clearBadgeCount() {
+    try {
+      await Notifications.setBadgeCountAsync(0);
+      console.log('✅ Badge count limpiado');
+    } catch (error) {
+      console.error('❌ Error al limpiar badge count:', error);
+    }
   }
 }
 
-/**
- * Maneja cuando el usuario interactúa con una notificación (tap/click)
- * @param response Respuesta de la interacción con la notificación
- */
-export function handleNotificationResponse(
-  response: Notifications.NotificationResponse
-) {
-  const data = response.notification.request.content.data as AlertNotificationData;
-  
-  console.log('👆 Usuario interactuó con notificación:', {
-    actionIdentifier: response.actionIdentifier,
-    data,
-  });
-
-  // Navegar a la pantalla de notificaciones
-  try {
-    router.push('/(tabs)/explore');
-  } catch (error) {
-    console.error('Error al navegar:', error);
-  }
-}
-
-/**
- * Configura los listeners de notificaciones para la app
- * Debe llamarse en el componente raíz de la aplicación
- * 
- * @returns Función de limpieza para remover los listeners
- */
-export function setupNotificationListeners(): () => void {
-  // Listener para notificaciones recibidas mientras la app está activa
-  const receivedSubscription = Notifications.addNotificationReceivedListener(
-    handleNotificationReceived
-  );
-
-  // Listener para cuando el usuario toca una notificación
-  const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-    handleNotificationResponse
-  );
-
-  // Retornar función de limpieza
-  return () => {
-    receivedSubscription.remove();
-    responseSubscription.remove();
-  };
-}
-
-/**
- * Muestra una notificación local (para testing)
- * @param title Título de la notificación
- * @param body Cuerpo del mensaje
- * @param data Datos adicionales
- */
-export async function showLocalNotification(
-  title: string,
-  body: string,
-  data?: AlertNotificationData
-) {
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      data: data || {},
-      sound: true,
-      priority: Notifications.AndroidNotificationPriority.HIGH,
-    },
-    trigger: null, // Mostrar inmediatamente
-  });
-}
-
-/**
- * Obtiene todas las notificaciones pendientes
- */
-export async function getPendingNotifications() {
-  return await Notifications.getAllScheduledNotificationsAsync();
-}
-
-/**
- * Cancela todas las notificaciones pendientes
- */
-export async function cancelAllNotifications() {
-  await Notifications.cancelAllScheduledNotificationsAsync();
-}
-
-/**
- * Obtiene el badge count actual
- */
-export async function getBadgeCount(): Promise<number> {
-  return await Notifications.getBadgeCountAsync();
-}
-
-/**
- * Establece el badge count
- * @param count Número a mostrar en el badge
- */
-export async function setBadgeCount(count: number) {
-  await Notifications.setBadgeCountAsync(count);
-}
-
-/**
- * Limpia el badge count
- */
-export async function clearBadge() {
-  await Notifications.setBadgeCountAsync(0);
-}
+export default NotificationService;
