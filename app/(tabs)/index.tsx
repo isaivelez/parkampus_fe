@@ -1,6 +1,7 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { saveNotificationToken } from '@/services/alertService';
 import { ApiError, getParkingLots, ParkingLot, updateParkingLot } from '@/services/parkingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -62,11 +63,38 @@ export default function CeldasScreen() {
       setNotificationPermissionAsked(true);
 
       if (finalStatus === 'granted') {
-        Alert.alert(
-          '🔔 Notificaciones activadas',
-          'Recibirás notificaciones sobre la disponibilidad del parqueadero',
-          [{ text: 'Entendido' }]
-        );
+        // Obtener el token de notificación push
+        try {
+          const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: 'parkampus-app', // Cambia esto por tu project ID de Expo
+          });
+          const token = tokenData.data;
+
+          // Guardar el token en el backend si el usuario está autenticado
+          if (user && user._id) {
+            try {
+              // Convertir _id de string a number si es necesario
+              const userId = parseInt(user._id, 10);
+              await saveNotificationToken(token, userId);
+              console.log('Token de notificación guardado exitosamente');
+            } catch (error) {
+              console.error('Error al guardar el token en el servidor:', error);
+            }
+          }
+
+          Alert.alert(
+            '🔔 Notificaciones activadas',
+            'Recibirás notificaciones sobre la disponibilidad del parqueadero y alertas importantes',
+            [{ text: 'Entendido' }]
+          );
+        } catch (error) {
+          console.error('Error al obtener el token de notificación:', error);
+          Alert.alert(
+            '⚠️ Advertencia',
+            'Las notificaciones están activadas pero hubo un problema técnico. Intenta nuevamente más tarde.',
+            [{ text: 'Entendido' }]
+          );
+        }
       } else {
         Alert.alert(
           '⚠️ Notificaciones desactivadas',

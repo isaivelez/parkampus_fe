@@ -1,8 +1,42 @@
 import { ParkampusTheme } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificacionesScreen() {
+  const { user } = useAuth();
+  const isCelador = user?.user_type === 'celador';
+
+  // Si es celador, mostrar solo el botón de activar alerta
+  if (isCelador) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Notificaciones</Text>
+        </View>
+        
+        <View style={styles.celadorContainer}>
+          <View style={styles.alertIconContainer}>
+            <Text style={styles.alertIcon}>🚨</Text>
+          </View>
+          <Text style={styles.celadorTitle}>Sistema de Alertas</Text>
+          <Text style={styles.celadorDescription}>
+            Como celador, puedes enviar alertas masivas a todos los usuarios del campus.
+          </Text>
+          <TouchableOpacity 
+            style={styles.activarAlertaButton}
+            onPress={() => router.push('/alert-confirmation')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.activarAlertaText}>🔔 Activar alerta</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Vista normal para estudiantes y empleados
   // Datos de ejemplo para las notificaciones
   const notificaciones = [
     {
@@ -259,5 +293,55 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 32,
     lineHeight: 22,
+  },
+  // Estilos para celadores
+  celadorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  alertIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  alertIcon: {
+    fontSize: 64,
+  },
+  celadorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: ParkampusTheme.colors.black,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  celadorDescription: {
+    fontSize: 16,
+    color: ParkampusTheme.colors.gray,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  activarAlertaButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  activarAlertaText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

@@ -1,6 +1,6 @@
 import {
-  API_BASE_URL as ENV_API_BASE_URL,
-  API_TIMEOUT as ENV_API_TIMEOUT,
+    API_BASE_URL as ENV_API_BASE_URL,
+    API_TIMEOUT as ENV_API_TIMEOUT,
 } from "@env";
 
 /**
@@ -27,6 +27,10 @@ export const API_ENDPOINTS = {
 
   // Notificaciones
   NOTIFICACIONES: `${API_BASE_URL}/api/notificaciones`,
+  SAVE_NOTIFICATION_TOKEN: `${API_BASE_URL}/api/notifications/token`,
+  
+  // Alertas masivas
+  SEND_ALERT: `${API_BASE_URL}/api/alerts/send`,
 };
 
 // Configuración de timeout desde variables de entorno
