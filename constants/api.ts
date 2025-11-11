@@ -22,8 +22,8 @@ export const API_ENDPOINTS = {
   // AUTH
   LOGIN: `${API_BASE_URL}/api/login`,
 
-  // Celdas
-  CELDAS: `${API_BASE_URL}/api/celdas`,
+  // Parking Lots
+  PARKING_LOTS: `${API_BASE_URL}/api/parking-lots`,
 
   // Notificaciones
   NOTIFICACIONES: `${API_BASE_URL}/api/notificaciones`,
