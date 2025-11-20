@@ -193,6 +193,12 @@ export default function CeldasScreen() {
             setEditingLotId(null);
         };
 
+        const getAvailabilityColor = (count: number) => {
+            if (count < 10) return ParkampusTheme.colors.danger;
+            if (count <= 20) return ParkampusTheme.colors.warning;
+            return ParkampusTheme.colors.success;
+        };
+
         return (
             <View style={styles.parkingLotCard}>
                 <View style={styles.parkingLotHeader}>
@@ -306,11 +312,11 @@ export default function CeldasScreen() {
                     <View style={styles.parkingLotStats}>
                         <View style={styles.parkingLotStat}>
                             <View style={[styles.statIconContainer, { backgroundColor: '#E0F2FE' }]}>
-                                <Text style={styles.statIcon}>🚗</Text>
+                                <IconSymbol name="car.fill" size={20} color={ParkampusTheme.colors.main} />
                             </View>
                             <View>
                                 <Text style={styles.statLabel}>Carros</Text>
-                                <Text style={[styles.statNumberLot, { color: ParkampusTheme.colors.main }]}>
+                                <Text style={[styles.statNumberLot, { color: getAvailabilityColor(lot.car_available) }]}>
                                     {lot.car_available} <Text style={styles.statMax}>/ {lot.car_max_available}</Text>
                                 </Text>
                             </View>
@@ -318,11 +324,11 @@ export default function CeldasScreen() {
                         <View style={styles.parkingLotDivider} />
                         <View style={styles.parkingLotStat}>
                             <View style={[styles.statIconContainer, { backgroundColor: '#DCFCE7' }]}>
-                                <Text style={styles.statIcon}>🏍️</Text>
+                                <IconSymbol name="bicycle" size={20} color={ParkampusTheme.colors.success} />
                             </View>
                             <View>
                                 <Text style={styles.statLabel}>Motos</Text>
-                                <Text style={[styles.statNumberLot, { color: ParkampusTheme.colors.success }]}>
+                                <Text style={[styles.statNumberLot, { color: getAvailabilityColor(lot.moto_available) }]}>
                                     {lot.moto_available} <Text style={styles.statMax}>/ {lot.moto_max_available}</Text>
                                 </Text>
                             </View>
