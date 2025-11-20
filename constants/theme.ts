@@ -41,12 +41,18 @@ export const Colors = {
 // Parkampus Theme
 export const ParkampusTheme = {
     colors: {
-        main: mainColor,
-        mainLight: mainLightColor,
+        main: '#004793', // Darker blue from the design
+        mainLight: '#0066CC',
         black: blackColor,
         white: '#FFFFFF',
         gray: '#687076',
         lightGray: '#F5F5F5',
+        success: '#22C55E',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        background: '#F0F4F8', // Light blue-ish gray background
+        cardBorder: '#E5E7EB',
+        textSecondary: '#64748B',
     },
     spacing: {
         xs: 4,

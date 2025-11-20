@@ -13,6 +13,8 @@ export interface ParkingLot {
     name: string;
     moto_available: number;
     car_available: number;
+    car_max_available: number;
+    moto_max_available: number;
     created_at: string;
     updated_at: string;
 }

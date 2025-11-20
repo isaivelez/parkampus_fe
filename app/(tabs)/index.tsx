@@ -1,3 +1,6 @@
+import { StatCard } from '@/components/home/StatCard';
+import { SummaryCard } from '@/components/home/SummaryCard';
+import { TypeAvailabilityCard } from '@/components/home/TypeAvailabilityCard';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,7 +38,8 @@ export default function CeldasScreen() {
     const [editingLotId, setEditingLotId] = useState<string | null>(null);
     const [notificationPermissionAsked, setNotificationPermissionAsked] = useState(false);
 
-    const isCelador = user?.user_type === 'celador';
+    // Case insensitive check for celador role
+    const isCelador = user?.user_type?.toLowerCase() === 'celador';
 
     // Función para solicitar permisos de notificaciones
     const requestNotificationPermissions = async () => {
@@ -119,12 +123,14 @@ export default function CeldasScreen() {
     const totalCarAvailable = parkingLots.reduce((sum, lot) => sum + lot.car_available, 0);
     const totalMotoAvailable = parkingLots.reduce((sum, lot) => sum + lot.moto_available, 0);
 
-    // Función para obtener el color según la disponibilidad
-    const getAvailabilityColor = (count: number): string => {
-        if (count < 10) return '#EF4444'; // Rojo
-        if (count <= 20) return '#F59E0B'; // Naranja
-        return '#22C55E'; // Verde
-    };
+    // Calcular capacidades máximas totales
+    const totalCarCapacity = parkingLots.reduce((sum, lot) => sum + (lot.car_max_available || 0), 0);
+    const totalMotoCapacity = parkingLots.reduce((sum, lot) => sum + (lot.moto_max_available || 0), 0);
+
+    const totalAvailable = totalCarAvailable + totalMotoAvailable;
+    const totalCapacity = totalCarCapacity + totalMotoCapacity;
+
+    const totalOccupied = Math.max(0, totalCapacity - totalAvailable);
 
     const handleLogout = () => {
         Alert.alert(
@@ -191,12 +197,12 @@ export default function CeldasScreen() {
             <View style={styles.parkingLotCard}>
                 <View style={styles.parkingLotHeader}>
                     <Text style={styles.parkingLotName}>{lot.name}</Text>
-                    {!isEditing && (
+                    {isCelador && !isEditing && (
                         <TouchableOpacity
                             style={styles.editButton}
                             onPress={() => setEditingLotId(lot._id)}
                         >
-                            <Text style={styles.editButtonText}>✏️ Actualizar</Text>
+                            <Text style={styles.editButtonText}>✏️ Editar</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -206,24 +212,32 @@ export default function CeldasScreen() {
                     <View style={styles.editForm}>
                         <View style={styles.formRow}>
                             <View style={styles.formField}>
-                                <Text style={styles.formLabel}>🚗 Carros</Text>
+                                <Text style={styles.formLabel}>
+                                    🚗 Carros (Max: {lot.car_max_available})
+                                </Text>
                                 <Controller
                                     control={control}
                                     name="car_available"
                                     rules={{
-                                        required: 'Campo requerido',
+                                        required: 'Requerido',
                                         validate: {
                                             isNumber: (value) => !isNaN(parseInt(value)) || 'Debe ser un número',
-                                            isNotNegative: (value) => parseInt(value) >= 0 || 'No puede ser negativo',
+                                            isNotNegative: (value) => parseInt(value) >= 0 || 'No negativo',
+                                            notExceedMax: (value) => parseInt(value) <= lot.car_max_available || `Máx ${lot.car_max_available}`,
                                         },
                                     }}
                                     render={({ field: { onChange, value } }) => (
                                         <TextInput
-                                            style={[styles.formInput, errors.car_available && styles.formInputError]}
+                                            style={[
+                                                styles.formInput,
+                                                errors.car_available && styles.formInputError,
+                                                lot.car_max_available === 0 && styles.formInputDisabled
+                                            ]}
                                             value={value}
                                             onChangeText={onChange}
                                             keyboardType="number-pad"
                                             placeholder="0"
+                                            editable={lot.car_max_available > 0}
                                         />
                                     )}
                                 />
@@ -233,24 +247,32 @@ export default function CeldasScreen() {
                             </View>
 
                             <View style={styles.formField}>
-                                <Text style={styles.formLabel}>🏍️ Motos</Text>
+                                <Text style={styles.formLabel}>
+                                    🏍️ Motos (Max: {lot.moto_max_available})
+                                </Text>
                                 <Controller
                                     control={control}
                                     name="moto_available"
                                     rules={{
-                                        required: 'Campo requerido',
+                                        required: 'Requerido',
                                         validate: {
                                             isNumber: (value) => !isNaN(parseInt(value)) || 'Debe ser un número',
-                                            isNotNegative: (value) => parseInt(value) >= 0 || 'No puede ser negativo',
+                                            isNotNegative: (value) => parseInt(value) >= 0 || 'No negativo',
+                                            notExceedMax: (value) => parseInt(value) <= lot.moto_max_available || `Máx ${lot.moto_max_available}`,
                                         },
                                     }}
                                     render={({ field: { onChange, value } }) => (
                                         <TextInput
-                                            style={[styles.formInput, errors.moto_available && styles.formInputError]}
+                                            style={[
+                                                styles.formInput,
+                                                errors.moto_available && styles.formInputError,
+                                                lot.moto_max_available === 0 && styles.formInputDisabled
+                                            ]}
                                             value={value}
                                             onChangeText={onChange}
                                             keyboardType="number-pad"
                                             placeholder="0"
+                                            editable={lot.moto_max_available > 0}
                                         />
                                     )}
                                 />
@@ -283,26 +305,27 @@ export default function CeldasScreen() {
                     // Modo lectura
                     <View style={styles.parkingLotStats}>
                         <View style={styles.parkingLotStat}>
-                            <Text style={styles.statIcon}>🚗</Text>
-                            <Text
-                                style={[
-                                    styles.statNumberLot,
-                                    { color: getAvailabilityColor(lot.car_available) }
-                                ]}
-                            >
-                                {lot.car_available}
-                            </Text>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#E0F2FE' }]}>
+                                <Text style={styles.statIcon}>🚗</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.statLabel}>Carros</Text>
+                                <Text style={[styles.statNumberLot, { color: ParkampusTheme.colors.main }]}>
+                                    {lot.car_available} <Text style={styles.statMax}>/ {lot.car_max_available}</Text>
+                                </Text>
+                            </View>
                         </View>
+                        <View style={styles.parkingLotDivider} />
                         <View style={styles.parkingLotStat}>
-                            <Text style={styles.statIcon}>🏍️</Text>
-                            <Text
-                                style={[
-                                    styles.statNumberLot,
-                                    { color: getAvailabilityColor(lot.moto_available) }
-                                ]}
-                            >
-                                {lot.moto_available}
-                            </Text>
+                            <View style={[styles.statIconContainer, { backgroundColor: '#DCFCE7' }]}>
+                                <Text style={styles.statIcon}>🏍️</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.statLabel}>Motos</Text>
+                                <Text style={[styles.statNumberLot, { color: ParkampusTheme.colors.success }]}>
+                                    {lot.moto_available} <Text style={styles.statMax}>/ {lot.moto_max_available}</Text>
+                                </Text>
+                            </View>
                         </View>
                     </View>
                 )}
@@ -310,77 +333,71 @@ export default function CeldasScreen() {
         );
     };
 
-    // Renderizar vista de celador
-    const renderCeladorView = () => (
+    const renderContent = () => (
         <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ParkampusTheme.colors.main} />
             }
         >
-            <View style={styles.celadorContainer}>
-                <Text style={styles.celadorTitle}>Disponibilidad Total</Text>
-                <Text style={styles.celadorSubtitle}>Todos los estacionamientos</Text>
-
-                {/* Cards de disponibilidad */}
-                <View style={styles.availabilityCards}>
-                    {/* Card para Carros */}
-                    <View style={styles.availabilityCard}>
-                        <View style={styles.cardIcon}>
-                            <Text style={styles.cardIconText}>🚗</Text>
-                        </View>
-                        <Text style={styles.cardLabel}>Para Carro</Text>
-                        <Text
-                            style={[
-                                styles.cardCounter,
-                                { color: getAvailabilityColor(totalCarAvailable) }
-                            ]}
-                        >
-                            {totalCarAvailable}
-                        </Text>
-                        <Text style={styles.cardSubtext}>espacios disponibles</Text>
+            <View style={styles.contentContainer}>
+                {/* Status Bar */}
+                <View style={styles.statusBar}>
+                    <View style={styles.statusBadge}>
+                        <IconSymbol name="wifi" size={12} color={ParkampusTheme.colors.success} />
+                        <Text style={styles.statusText}>Conectado</Text>
                     </View>
+                    <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+                        <IconSymbol name="arrow.clockwise" size={14} color={ParkampusTheme.colors.main} />
+                        <Text style={styles.refreshText}>Actualizar</Text>
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.lastUpdated}>
+                    Actualizado: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
 
-                    {/* Card para Motos */}
-                    <View style={styles.availabilityCard}>
-                        <View style={styles.cardIcon}>
-                            <Text style={styles.cardIconText}>🏍️</Text>
-                        </View>
-                        <Text style={styles.cardLabel}>Para Moto</Text>
-                        <Text
-                            style={[
-                                styles.cardCounter,
-                                { color: getAvailabilityColor(totalMotoAvailable) }
-                            ]}
-                        >
-                            {totalMotoAvailable}
-                        </Text>
-                        <Text style={styles.cardSubtext}>espacios disponibles</Text>
-                    </View>
+                {/* Summary Card */}
+                <SummaryCard available={totalAvailable} total={totalCapacity} />
+
+                {/* Stats Row */}
+                <View style={styles.statsRow}>
+                    <StatCard
+                        label="Ocupados"
+                        value={totalOccupied}
+                        icon="checkmark.circle"
+                        color={ParkampusTheme.colors.main}
+                    />
+                    <View style={{ width: 12 }} />
+                    <StatCard
+                        label="Capacidad Total"
+                        value={totalCapacity}
+                        icon="car.fill"
+                        color={ParkampusTheme.colors.gray}
+                    />
                 </View>
 
-                {/* Leyenda de colores */}
-                <View style={styles.legendContainer}>
-                    <Text style={styles.legendTitle}>Indicadores:</Text>
-                    <View style={styles.legendItems}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                            <Text style={styles.legendText}>Menos de 10</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-                            <Text style={styles.legendText}>10 - 20</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
-                            <Text style={styles.legendText}>Más de 20</Text>
-                        </View>
-                    </View>
-                </View>
+                <Text style={styles.sectionTitle}>Disponibilidad por Tipo</Text>
 
-                {/* Lista de estacionamientos */}
-                <Text style={styles.parkingLotsTitle}>Detalle por estacionamiento</Text>
+                {/* Type Availability Cards */}
+                <TypeAvailabilityCard
+                    label="Automóviles"
+                    icon="car.fill"
+                    available={totalCarAvailable}
+                    total={totalCarCapacity}
+                    color={ParkampusTheme.colors.main}
+                />
+
+                <TypeAvailabilityCard
+                    label="Motocicletas"
+                    icon="bicycle"
+                    available={totalMotoAvailable}
+                    total={totalMotoCapacity}
+                    color={ParkampusTheme.colors.success}
+                />
+
+                {/* Parking Lots List */}
+                <Text style={styles.sectionTitle}>Detalle por Estacionamiento</Text>
                 {parkingLots.map((lot) => (
                     <ParkingLotCard key={lot._id} lot={lot} />
                 ))}
@@ -388,204 +405,110 @@ export default function CeldasScreen() {
         </ScrollView>
     );
 
-    // Renderizar vista de estudiante/empleado
-    const renderDefaultView = () => (
-        <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-        >
-            <View style={styles.celadorContainer}>
-                <Text style={styles.celadorTitle}>Disponibilidad de Parqueadero</Text>
-                <Text style={styles.celadorSubtitle}>Estado actual</Text>
-
-                {/* Cards de disponibilidad */}
-                <View style={styles.availabilityCards}>
-                    {/* Card para Carros */}
-                    <View style={styles.availabilityCard}>
-                        <View style={styles.cardIcon}>
-                            <Text style={styles.cardIconText}>🚗</Text>
-                        </View>
-                        <Text style={styles.cardLabel}>Para Carro</Text>
-                        <Text
-                            style={[
-                                styles.cardCounter,
-                                { color: getAvailabilityColor(totalCarAvailable) }
-                            ]}
-                        >
-                            {totalCarAvailable}
-                        </Text>
-                        <Text style={styles.cardSubtext}>espacios disponibles</Text>
-                    </View>
-
-                    {/* Card para Motos */}
-                    <View style={styles.availabilityCard}>
-                        <View style={styles.cardIcon}>
-                            <Text style={styles.cardIconText}>🏍️</Text>
-                        </View>
-                        <Text style={styles.cardLabel}>Para Moto</Text>
-                        <Text
-                            style={[
-                                styles.cardCounter,
-                                { color: getAvailabilityColor(totalMotoAvailable) }
-                            ]}
-                        >
-                            {totalMotoAvailable}
-                        </Text>
-                        <Text style={styles.cardSubtext}>espacios disponibles</Text>
-                    </View>
-                </View>
-
-                {/* Leyenda de colores */}
-                <View style={styles.legendContainer}>
-                    <Text style={styles.legendTitle}>Indicadores:</Text>
-                    <View style={styles.legendItems}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                            <Text style={styles.legendText}>Menos de 10</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-                            <Text style={styles.legendText}>10 - 20</Text>
-                        </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
-                            <Text style={styles.legendText}>Más de 20</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Lista de estacionamientos (solo lectura para estudiantes/empleados) */}
-                <Text style={styles.parkingLotsTitle}>Detalle por estacionamiento</Text>
-                {parkingLots.map((lot) => (
-                    <View key={lot._id} style={styles.parkingLotCard}>
-                        <View style={styles.parkingLotHeader}>
-                            <Text style={styles.parkingLotName}>{lot.name}</Text>
-                        </View>
-                        <View style={styles.parkingLotStats}>
-                            <View style={styles.parkingLotStat}>
-                                <Text style={styles.statIcon}>🚗</Text>
-                                <Text
-                                    style={[
-                                        styles.statNumberLot,
-                                        { color: getAvailabilityColor(lot.car_available) }
-                                    ]}
-                                >
-                                    {lot.car_available}
-                                </Text>
-                            </View>
-                            <View style={styles.parkingLotStat}>
-                                <Text style={styles.statIcon}>🏍️</Text>
-                                <Text
-                                    style={[
-                                        styles.statNumberLot,
-                                        { color: getAvailabilityColor(lot.moto_available) }
-                                    ]}
-                                >
-                                    {lot.moto_available}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                ))}
-            </View>
-        </ScrollView>
-    );
-
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <View style={styles.userInfo}>
-                        <Text style={styles.welcomeText}>Bienvenido,</Text>
-                        <Text style={styles.userName}>
-                            {user ? `${user.first_name} ${user.last_name}` : 'Usuario'}
-                        </Text>
-                        {user && (
-                            <Text style={styles.userRole}>
-                                {user.user_type === 'estudiante' ? '🎓 Estudiante' :
-                                    user.user_type === 'empleado' ? '💼 Empleado' :
-                                        '👮 Celador'}
+        <View style={styles.container}>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <View style={styles.logoContainer}>
+                            <Text style={styles.logoText}>P</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.appName}>Parkampus</Text>
+                            <Text style={styles.appRole}>
+                                {isCelador ? 'Panel de Celador' : 'Panel de Usuario'}
                             </Text>
-                        )}
+                        </View>
                     </View>
-                    <TouchableOpacity
-                        style={styles.logoutButton}
-                        onPress={handleLogout}
-                        activeOpacity={0.7}
-                    >
-                        <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color="white" />
-                    </TouchableOpacity>
+                    <View style={styles.headerRight}>
+                        <View style={styles.onlineBadge}>
+                            <Text style={styles.onlineText}>En línea</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.logoutButton}
+                            onPress={handleLogout}
+                        >
+                            <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color={ParkampusTheme.colors.main} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <Text style={styles.title}>
-                    {isCelador ? 'Panel de Control' : 'Celdas de Parqueo'}
-                </Text>
-                <Text style={styles.subtitle}>Universidad Pascual Bravo - Sede Pilarica</Text>
-            </View>
 
-            {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={ParkampusTheme.colors.main} />
-                    <Text style={styles.loadingText}>Cargando información...</Text>
-                </View>
-            ) : (
-                isCelador ? renderCeladorView() : renderDefaultView()
-            )}
-        </SafeAreaView>
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={ParkampusTheme.colors.main} />
+                        <Text style={styles.loadingText}>Cargando información...</Text>
+                    </View>
+                ) : (
+                    renderContent()
+                )}
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FA',
+        backgroundColor: ParkampusTheme.colors.background,
     },
-    header: {
-        padding: 20,
-        backgroundColor: ParkampusTheme.colors.main,
-    },
-    headerTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 16,
-    },
-    userInfo: {
+    safeArea: {
         flex: 1,
     },
-    welcomeText: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.8)',
-        marginBottom: 4,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
     },
-    userName: {
-        fontSize: 20,
-        fontWeight: 'bold',
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    logoContainer: {
+        width: 40,
+        height: 40,
+        backgroundColor: ParkampusTheme.colors.main,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    logoText: {
         color: 'white',
-        marginBottom: 4,
-    },
-    userRole: {
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.9)',
-        marginTop: 2,
-    },
-    logoutButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        padding: 10,
-        borderRadius: 8,
-        marginLeft: 12,
-    },
-    title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 4,
     },
-    subtitle: {
-        fontSize: 16,
-        color: 'rgba(255, 255, 255, 0.9)',
+    appName: {
+        color: ParkampusTheme.colors.black,
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    appRole: {
+        color: ParkampusTheme.colors.gray,
+        fontSize: 12,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    onlineBadge: {
+        backgroundColor: '#DCFCE7',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    onlineText: {
+        color: ParkampusTheme.colors.success,
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    logoutButton: {
+        padding: 4,
     },
     loadingContainer: {
         flex: 1,
@@ -600,159 +523,146 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
-    // Estilos para vista de celador
-    celadorContainer: {
-        padding: 16,
-        paddingBottom: 80,
+    contentContainer: {
+        padding: 20,
+        paddingBottom: 40,
     },
-    celadorTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: ParkampusTheme.colors.black,
-        marginBottom: 4,
-    },
-    celadorSubtitle: {
-        fontSize: 16,
-        color: ParkampusTheme.colors.gray,
-        marginBottom: 20,
-    },
-    availabilityCards: {
+    statusBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 24,
-        gap: 12,
-    },
-    availabilityCard: {
-        flex: 1,
-        backgroundColor: 'white',
-        borderRadius: 16,
-        padding: 20,
         alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-    },
-    cardIcon: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#F3F4F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    cardIconText: {
-        fontSize: 32,
-    },
-    cardLabel: {
-        fontSize: 14,
-        color: ParkampusTheme.colors.gray,
-        marginBottom: 8,
-        fontWeight: '600',
-    },
-    cardCounter: {
-        fontSize: 48,
-        fontWeight: 'bold',
         marginBottom: 4,
     },
-    cardSubtext: {
-        fontSize: 12,
-        color: ParkampusTheme.colors.gray,
-        textAlign: 'center',
-    },
-    legendContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 24,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-    },
-    legendTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: ParkampusTheme.colors.black,
-        marginBottom: 12,
-    },
-    legendItems: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    legendItem: {
+    statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    legendDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        marginRight: 6,
-    },
-    legendText: {
-        fontSize: 13,
-        color: ParkampusTheme.colors.gray,
-    },
-    parkingLotsTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: ParkampusTheme.colors.black,
-        marginBottom: 12,
-    },
-    parkingLotCard: {
         backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        elevation: 2,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    statusText: {
+        color: ParkampusTheme.colors.success,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    refreshButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
-    parkingLotName: {
+    refreshText: {
+        color: ParkampusTheme.colors.main,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    lastUpdated: {
+        color: ParkampusTheme.colors.gray,
+        fontSize: 12,
+        marginBottom: 20,
+        marginLeft: 4,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        marginBottom: 24,
+    },
+    sectionTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: ParkampusTheme.colors.black,
+        color: ParkampusTheme.colors.textSecondary,
         marginBottom: 12,
+        marginTop: 8,
     },
-    parkingLotStats: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
+    // Parking Lot Card Styles
+    parkingLotCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: ParkampusTheme.colors.cardBorder,
     },
-    parkingLotStat: {
-        alignItems: 'center',
-    },
-    statIcon: {
-        fontSize: 24,
-        marginBottom: 8,
-    },
-    statNumberLot: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    // Estilos para el formulario de edición
     parkingLotHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
+    },
+    parkingLotName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: ParkampusTheme.colors.black,
     },
     editButton: {
-        backgroundColor: ParkampusTheme.colors.gray,
+        backgroundColor: '#F3F4F6',
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 6,
+        borderRadius: 8,
     },
     editButtonText: {
         fontSize: 12,
-        color: 'white',
+        color: ParkampusTheme.colors.gray,
         fontWeight: '600',
     },
+    parkingLotStats: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    parkingLotStat: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    statIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    statIcon: {
+        fontSize: 20,
+    },
+    statLabel: {
+        fontSize: 12,
+        color: ParkampusTheme.colors.textSecondary,
+    },
+    statNumberLot: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    statMax: {
+        fontSize: 14,
+        color: ParkampusTheme.colors.gray,
+        fontWeight: 'normal',
+    },
+    parkingLotDivider: {
+        width: 1,
+        height: 40,
+        backgroundColor: '#E5E7EB',
+        marginHorizontal: 16,
+    },
+    // Form Styles
     editForm: {
         marginTop: 8,
     },
@@ -765,27 +675,31 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     formLabel: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '600',
-        color: ParkampusTheme.colors.black,
-        marginBottom: 8,
+        color: ParkampusTheme.colors.textSecondary,
+        marginBottom: 6,
     },
     formInput: {
         borderWidth: 1,
         borderColor: '#D1D5DB',
         borderRadius: 8,
         paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16,
+        paddingVertical: 8,
+        fontSize: 14,
         backgroundColor: '#F9FAFB',
     },
     formInputError: {
-        borderColor: '#EF4444',
+        borderColor: ParkampusTheme.colors.danger,
         backgroundColor: '#FEF2F2',
     },
+    formInputDisabled: {
+        backgroundColor: '#E5E7EB',
+        color: '#9CA3AF',
+    },
     errorTextSmall: {
-        fontSize: 11,
-        color: '#EF4444',
+        fontSize: 10,
+        color: ParkampusTheme.colors.danger,
         marginTop: 4,
     },
     formButtons: {
@@ -794,15 +708,15 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     cancelButton: {
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#F3F4F6',
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 8,
     },
     cancelButtonText: {
-        fontSize: 14,
+        color: ParkampusTheme.colors.gray,
         fontWeight: '600',
-        color: '#374151',
+        fontSize: 14,
     },
     saveButton: {
         backgroundColor: ParkampusTheme.colors.main,
@@ -811,11 +725,11 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     saveButtonDisabled: {
-        opacity: 0.6,
+        opacity: 0.7,
     },
     saveButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
         color: 'white',
+        fontWeight: '600',
+        fontSize: 14,
     },
 });

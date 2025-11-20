@@ -9,7 +9,7 @@ type IconMapping = Record<
     SymbolViewProps["name"],
     ComponentProps<typeof MaterialIcons>["name"]
 >;
-type IconSymbolName = keyof typeof MAPPING;
+export type IconSymbolName = keyof typeof MAPPING;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -25,7 +25,16 @@ const MAPPING = {
     "bell.fill": "notifications",
     "grid.circle.fill": "grid-view",
     "rectangle.portrait.and.arrow.right": "logout",
-} as IconMapping;
+    "wifi": "wifi",
+    "arrow.clockwise": "refresh",
+    "checkmark.circle": "check-circle",
+    "bicycle": "pedal-bike",
+} as Partial<
+    Record<
+        import("expo-symbols").SymbolViewProps["name"],
+        React.ComponentProps<typeof MaterialIcons>["name"]
+    >
+>;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
