@@ -17,16 +17,16 @@ export const API_BASE_URL = ENV_API_BASE_URL || "http://192.168.40.37:3000";
 // Endpoints
 export const API_ENDPOINTS = {
     // Usuarios
-    REGISTER: `${API_BASE_URL}/api/users`,
+    REGISTER: "/api/users",
 
     // AUTH
-    LOGIN: `${API_BASE_URL}/api/login`,
+    LOGIN: "/api/login",
 
     // Parking Lots
-    PARKING_LOTS: `${API_BASE_URL}/api/parking-lots`,
+    PARKING_LOTS: "/api/parking-lots",
 
     // Notificaciones
-    NOTIFICACIONES: `${API_BASE_URL}/api/notificaciones`,
+    NOTIFICACIONES: "/api/notificaciones",
 };
 
 // Configuración de timeout desde variables de entorno

@@ -3,7 +3,8 @@
  * Maneja todas las peticiones relacionadas con estacionamientos
  */
 
-import { API_ENDPOINTS, API_TIMEOUT } from "@/constants/api";
+import { API_ENDPOINTS } from "@/constants/api";
+import api from "./api";
 import axios from "axios";
 
 // Tipos
@@ -44,11 +45,8 @@ export interface ApiError {
  */
 export const getParkingLots = async (): Promise<ParkingLotsResponse> => {
     try {
-        const response = await axios.get<ParkingLotsResponse>(
-            API_ENDPOINTS.PARKING_LOTS,
-            {
-                timeout: API_TIMEOUT,
-            }
+        const response = await api.get<ParkingLotsResponse>(
+            API_ENDPOINTS.PARKING_LOTS
         );
 
         return response.data;
@@ -86,15 +84,9 @@ export const updateParkingLot = async (
     data: UpdateParkingLotData
 ): Promise<UpdateParkingLotResponse> => {
     try {
-        const response = await axios.put<UpdateParkingLotResponse>(
+        const response = await api.put<UpdateParkingLotResponse>(
             `${API_ENDPOINTS.PARKING_LOTS}/${parkingId}`,
-            data,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                timeout: API_TIMEOUT,
-            }
+            data
         );
 
         return response.data;

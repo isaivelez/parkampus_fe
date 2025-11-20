@@ -4,7 +4,8 @@
  */
 
 import axios from "axios";
-import { API_ENDPOINTS, API_TIMEOUT } from "@/constants/api";
+import { API_ENDPOINTS } from "@/constants/api";
+import api from "./api";
 
 // Tipos
 export interface RegisterUserData {
@@ -62,15 +63,9 @@ export const registerUser = async (
     data: RegisterUserData
 ): Promise<RegisterUserResponse> => {
     try {
-        const response = await axios.post<RegisterUserResponse>(
+        const response = await api.post<RegisterUserResponse>(
             API_ENDPOINTS.REGISTER,
-            data,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                timeout: API_TIMEOUT,
-            }
+            data
         );
 
         return response.data;
@@ -107,15 +102,9 @@ export const loginUser = async (
     data: LoginUserData
 ): Promise<LoginUserResponse> => {
     try {
-        const response = await axios.post<LoginUserResponse>(
+        const response = await api.post<LoginUserResponse>(
             API_ENDPOINTS.LOGIN,
-            data,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                timeout: API_TIMEOUT,
-            }
+            data
         );
 
         return response.data;
@@ -150,9 +139,8 @@ export const loginUser = async (
  */
 export const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
-        const response = await axios.get(`${API_ENDPOINTS.REGISTER}/check-email`, {
+        const response = await api.get(`${API_ENDPOINTS.REGISTER}/check-email`, {
             params: { email },
-            timeout: API_TIMEOUT,
         });
 
         return response.data.exists;
