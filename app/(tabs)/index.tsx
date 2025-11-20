@@ -153,6 +153,65 @@ export default function CeldasScreen() {
         );
     };
 
+    // Componente de input numérico con flechas
+    const NumberInput = ({
+        value,
+        onChange,
+        max,
+        disabled,
+        error
+    }: {
+        value: string,
+        onChange: (val: string) => void,
+        max: number,
+        disabled?: boolean,
+        error?: boolean
+    }) => {
+        const handleIncrement = () => {
+            const current = parseInt(value) || 0;
+            if (current < max) {
+                onChange((current + 1).toString());
+            }
+        };
+
+        const handleDecrement = () => {
+            const current = parseInt(value) || 0;
+            if (current > 0) {
+                onChange((current - 1).toString());
+            }
+        };
+
+        return (
+            <View style={[styles.numberInputContainer, error && styles.formInputError, disabled && styles.formInputDisabled]}>
+                <TextInput
+                    style={[styles.numberInput, disabled && { color: '#9CA3AF' }]}
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="number-pad"
+                    placeholder="0"
+                    editable={!disabled}
+                />
+                <View style={styles.stepperContainer}>
+                    <TouchableOpacity
+                        style={[styles.stepperButton, styles.stepperButtonUp]}
+                        onPress={handleIncrement}
+                        disabled={disabled || (parseInt(value) || 0) >= max}
+                    >
+                        <IconSymbol name="chevron.right" size={12} color={disabled ? '#9CA3AF' : ParkampusTheme.colors.gray} style={{ transform: [{ rotate: '-90deg' }] }} />
+                    </TouchableOpacity>
+                    <View style={styles.stepperDivider} />
+                    <TouchableOpacity
+                        style={[styles.stepperButton, styles.stepperButtonDown]}
+                        onPress={handleDecrement}
+                        disabled={disabled || (parseInt(value) || 0) <= 0}
+                    >
+                        <IconSymbol name="chevron.right" size={12} color={disabled ? '#9CA3AF' : ParkampusTheme.colors.gray} style={{ transform: [{ rotate: '90deg' }] }} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
     // Componente para cada card de parking lot con edición inline
     const ParkingLotCard = ({ lot }: { lot: ParkingLot }) => {
         const isEditing = editingLotId === lot._id;
@@ -233,17 +292,12 @@ export default function CeldasScreen() {
                                         },
                                     }}
                                     render={({ field: { onChange, value } }) => (
-                                        <TextInput
-                                            style={[
-                                                styles.formInput,
-                                                errors.car_available && styles.formInputError,
-                                                lot.car_max_available === 0 && styles.formInputDisabled
-                                            ]}
+                                        <NumberInput
                                             value={value}
-                                            onChangeText={onChange}
-                                            keyboardType="number-pad"
-                                            placeholder="0"
-                                            editable={lot.car_max_available > 0}
+                                            onChange={onChange}
+                                            max={lot.car_max_available}
+                                            disabled={lot.car_max_available === 0}
+                                            error={!!errors.car_available}
                                         />
                                     )}
                                 />
@@ -268,17 +322,12 @@ export default function CeldasScreen() {
                                         },
                                     }}
                                     render={({ field: { onChange, value } }) => (
-                                        <TextInput
-                                            style={[
-                                                styles.formInput,
-                                                errors.moto_available && styles.formInputError,
-                                                lot.moto_max_available === 0 && styles.formInputDisabled
-                                            ]}
+                                        <NumberInput
                                             value={value}
-                                            onChangeText={onChange}
-                                            keyboardType="number-pad"
-                                            placeholder="0"
-                                            editable={lot.moto_max_available > 0}
+                                            onChange={onChange}
+                                            max={lot.moto_max_available}
+                                            disabled={lot.moto_max_available === 0}
+                                            error={!!errors.moto_available}
                                         />
                                     )}
                                 />
@@ -737,5 +786,41 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '600',
         fontSize: 14,
+    },
+    numberInputContainer: {
+        flexDirection: 'row',
+        borderWidth: 1,
+        borderColor: ParkampusTheme.colors.cardBorder,
+        borderRadius: 8,
+        backgroundColor: ParkampusTheme.colors.lightGray,
+        height: 44,
+        overflow: 'hidden',
+    },
+    numberInput: {
+        flex: 1,
+        paddingHorizontal: 12,
+        fontSize: 16,
+        color: ParkampusTheme.colors.black,
+    },
+    stepperContainer: {
+        width: 32,
+        borderLeftWidth: 1,
+        borderLeftColor: ParkampusTheme.colors.cardBorder,
+        backgroundColor: 'white',
+    },
+    stepperButton: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    stepperButtonUp: {
+        borderBottomWidth: 0,
+    },
+    stepperButtonDown: {
+        borderTopWidth: 0,
+    },
+    stepperDivider: {
+        height: 1,
+        backgroundColor: ParkampusTheme.colors.cardBorder,
     },
 });
