@@ -121,6 +121,7 @@ npm run web
 
 ## 📁 Estructura del Proyecto
 
+```
 parkampus_fe/
 ├── app/                    # Pantallas principales (Expo Router)
 │   ├── (auth)/            # Autenticación (Login, Register)
@@ -143,6 +144,7 @@ parkampus_fe/
 ├── services/           # Servicios de API
 ├── utils/              # Utilidades y validaciones
 └── scripts/            # Scripts de utilidad
+```
 
 ---
 
