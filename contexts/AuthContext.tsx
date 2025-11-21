@@ -12,20 +12,38 @@ interface AuthContextType {
     setUser: (user: User | null) => void;
     logout: () => Promise<void>;
     isAuthenticated: boolean;
+    isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUserState] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    React.useEffect(() => {
+        // Cargar usuario guardado al iniciar
+        const loadUser = async () => {
+            try {
+                const storedUser = await AsyncStorage.getItem("user");
+                if (storedUser) {
+                    setUserState(JSON.parse(storedUser));
+                }
+            } catch (error) {
+                console.error("Error cargando usuario:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadUser();
+    }, []);
 
     const setUser = (userData: User | null) => {
         setUserState(userData);
         if (userData) {
-            // Guardar usuario en AsyncStorage
             AsyncStorage.setItem("user", JSON.stringify(userData));
         } else {
-            // Eliminar usuario de AsyncStorage
             AsyncStorage.removeItem("user");
         }
     };
@@ -41,7 +59,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 user,
                 setUser,
                 logout,
-                isAuthenticated: user !== null,
+                isAuthenticated: !!user,
+                isLoading,
             }}
         >
             {children}

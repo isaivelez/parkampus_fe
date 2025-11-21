@@ -45,7 +45,6 @@ export function RegisterForm() {
     const password = watch("password");
 
     const roleOptions = [
-        { label: "Celador", value: "celador", emoji: "👮" },
         { label: "Estudiante", value: "estudiante", emoji: "🎓" },
         { label: "Empleado", value: "empleado", emoji: "💼" },
     ];
@@ -57,7 +56,7 @@ export function RegisterForm() {
                 last_name: data.apellido,
                 email: data.correo,
                 password: data.password,
-                user_type: data.rol as "celador" | "estudiante" | "empleado",
+                user_type: data.rol as "estudiante" | "empleado",
             };
 
             const response = await registerUser(userData);
