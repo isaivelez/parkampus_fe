@@ -121,23 +121,28 @@ npm run web
 
 ## 📁 Estructura del Proyecto
 
-```
 parkampus_fe/
 ├── app/                    # Pantallas principales (Expo Router)
-│   ├── (tabs)/            # Navegación por pestañas
+│   ├── (auth)/            # Autenticación (Login, Register)
+│   ├── (pages)/           # Páginas secundarias (Modal, Detalles, Config)
+│   ├── (tabs)/            # Navegación principal
 │   │   ├── index.tsx      # Pantalla principal
-│   │   ├── explore.tsx    # Explorar parqueaderos
+│   │   ├── explore.tsx    # Notificaciones
+│   │   ├── profile.tsx    # Perfil de usuario
 │   │   └── _layout.tsx    # Layout de pestañas
-│   ├── _layout.tsx        # Layout principal
-│   └── modal.tsx          # Pantallas modales
+│   └── _layout.tsx        # Layout raíz
 ├── assets/                # Recursos estáticos
 │   └── images/           # Iconos e imágenes
 ├── components/           # Componentes reutilizables
-│   └── ui/              # Componentes de interfaz
+│   ├── auth/            # Componentes de autenticación
+│   ├── home/            # Componentes del home
+│   └── ui/              # Componentes de interfaz genéricos
 ├── constants/           # Constantes y temas
+├── contexts/            # Contextos (Auth, Theme)
 ├── hooks/              # Hooks personalizados
+├── services/           # Servicios de API
+├── utils/              # Utilidades y validaciones
 └── scripts/            # Scripts de utilidad
-```
 
 ---
 

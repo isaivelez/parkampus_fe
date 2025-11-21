@@ -1,8 +1,12 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificacionesScreen() {
+    const [refreshing, setRefreshing] = useState(false);
+
     // Datos de ejemplo para las notificaciones
     const notificaciones = [
         {
@@ -47,24 +51,32 @@ export default function NotificacionesScreen() {
         },
     ];
 
+    const onRefresh = () => {
+        setRefreshing(true);
+        // Simular carga
+        setTimeout(() => {
+            setRefreshing(false);
+        }, 1000);
+    };
+
     const getTipoIcon = (tipo: string) => {
         switch (tipo) {
-            case 'reserva': return '✅';
-            case 'mantenimiento': return '🔧';
-            case 'disponibilidad': return '🟢';
-            case 'sistema': return '⚙️';
-            case 'vencimiento': return '⏰';
-            default: return '📱';
+            case 'reserva': return 'checkmark.circle.fill';
+            case 'mantenimiento': return 'wrench.and.screwdriver.fill';
+            case 'disponibilidad': return 'car.fill';
+            case 'sistema': return 'gearshape.fill';
+            case 'vencimiento': return 'clock.fill';
+            default: return 'bell.fill';
         }
     };
 
     const getTipoColor = (tipo: string) => {
         switch (tipo) {
-            case 'reserva': return '#22C55E';
-            case 'mantenimiento': return '#F59E0B';
-            case 'disponibilidad': return '#10B981';
+            case 'reserva': return ParkampusTheme.colors.success;
+            case 'mantenimiento': return ParkampusTheme.colors.warning;
+            case 'disponibilidad': return ParkampusTheme.colors.main;
             case 'sistema': return '#6366F1';
-            case 'vencimiento': return '#EF4444';
+            case 'vencimiento': return ParkampusTheme.colors.danger;
             default: return ParkampusTheme.colors.gray;
         }
     };
@@ -72,92 +84,122 @@ export default function NotificacionesScreen() {
     const noLeidas = notificaciones.filter(n => !n.leida).length;
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Notificaciones</Text>
-                {noLeidas > 0 && (
-                    <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{noLeidas}</Text>
+        <View style={styles.container}>
+            <SafeAreaView style={styles.safeArea}>
+                {/* Header similar al Home */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <View style={styles.logoContainer}>
+                            <IconSymbol name="bell.fill" size={20} color="white" />
+                        </View>
+                        <Text style={styles.headerTitle}>Notificaciones</Text>
                     </View>
-                )}
-            </View>
-
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                <View style={styles.notificacionesContainer}>
-                    {notificaciones.map((notificacion) => (
-                        <TouchableOpacity
-                            key={notificacion.id}
-                            style={[
-                                styles.notificacionCard,
-                                !notificacion.leida && styles.notificacionNoLeida
-                            ]}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.notificacionHeader}>
-                                <View style={styles.tipoContainer}>
-                                    <View style={[
-                                        styles.tipoIcon,
-                                        { backgroundColor: getTipoColor(notificacion.tipo) }
-                                    ]}>
-                                        <Text style={styles.iconText}>{getTipoIcon(notificacion.tipo)}</Text>
-                                    </View>
-                                    <View style={styles.notificacionContent}>
-                                        <Text style={[
-                                            styles.notificacionTitulo,
-                                            !notificacion.leida && styles.tituloNoLeido
-                                        ]}>
-                                            {notificacion.titulo}
-                                        </Text>
-                                        <Text style={styles.notificacionMensaje}>
-                                            {notificacion.mensaje}
-                                        </Text>
-                                    </View>
-                                </View>
-                                {!notificacion.leida && <View style={styles.puntito} />}
-                            </View>
-                            <Text style={styles.notificacionTiempo}>{notificacion.tiempo}</Text>
-                        </TouchableOpacity>
-                    ))}
+                    {noLeidas > 0 && (
+                        <View style={styles.badgeContainer}>
+                            <Text style={styles.badgeText}>{noLeidas} nuevas</Text>
+                        </View>
+                    )}
                 </View>
 
-                {notificaciones.length === 0 && (
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyIcon}>🔔</Text>
-                        <Text style={styles.emptyTitle}>No hay notificaciones</Text>
-                        <Text style={styles.emptyMessage}>
-                            Te notificaremos cuando haya actualizaciones sobre tus reservas
-                        </Text>
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ParkampusTheme.colors.main} />
+                    }
+                >
+                    <View style={styles.contentContainer}>
+                        {notificaciones.map((notificacion) => (
+                            <TouchableOpacity
+                                key={notificacion.id}
+                                style={[
+                                    styles.notificationCard,
+                                    !notificacion.leida && styles.notificationUnread
+                                ]}
+                                activeOpacity={0.7}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View style={[
+                                        styles.iconContainer,
+                                        { backgroundColor: getTipoColor(notificacion.tipo) + '20' } // 20% opacity
+                                    ]}>
+                                        <IconSymbol
+                                            name={getTipoIcon(notificacion.tipo) as any}
+                                            size={24}
+                                            color={getTipoColor(notificacion.tipo)}
+                                        />
+                                    </View>
+                                    <View style={styles.headerTextContainer}>
+                                        <Text style={styles.notificationTitle}>{notificacion.titulo}</Text>
+                                        <Text style={styles.notificationTime}>{notificacion.tiempo}</Text>
+                                    </View>
+                                    {!notificacion.leida && (
+                                        <View style={styles.unreadDot} />
+                                    )}
+                                </View>
+                                <Text style={styles.notificationMessage}>
+                                    {notificacion.mensaje}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+
+                        {notificaciones.length === 0 && (
+                            <View style={styles.emptyContainer}>
+                                <IconSymbol name="bell.slash" size={48} color={ParkampusTheme.colors.gray} />
+                                <Text style={styles.emptyTitle}>No hay notificaciones</Text>
+                                <Text style={styles.emptyMessage}>
+                                    Te avisaremos cuando haya novedades importantes.
+                                </Text>
+                            </View>
+                        )}
                     </View>
-                )}
-            </ScrollView>
-        </SafeAreaView>
+                </ScrollView>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FA',
+        backgroundColor: ParkampusTheme.colors.background,
+    },
+    safeArea: {
+        flex: 1,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 20,
-        backgroundColor: ParkampusTheme.colors.main,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    badge: {
-        backgroundColor: '#EF4444',
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        minWidth: 24,
+    headerLeft: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
+    },
+    logoContainer: {
+        width: 40,
+        height: 40,
+        backgroundColor: ParkampusTheme.colors.main,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: ParkampusTheme.colors.black,
+    },
+    badgeContainer: {
+        backgroundColor: ParkampusTheme.colors.danger,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
     },
     badgeText: {
         color: 'white',
@@ -167,97 +209,81 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
-    notificacionesContainer: {
-        padding: 16,
-        paddingBottom: 80, // Espacio para el tab bar
+    contentContainer: {
+        padding: 20,
+        paddingBottom: 40,
     },
-    notificacionCard: {
+    notificationCard: {
         backgroundColor: 'white',
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 16,
         marginBottom: 12,
-        elevation: 2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: ParkampusTheme.colors.cardBorder,
     },
-    notificacionNoLeida: {
+    notificationUnread: {
+        borderColor: ParkampusTheme.colors.main,
         borderLeftWidth: 4,
-        borderLeftColor: ParkampusTheme.colors.main,
     },
-    notificacionHeader: {
+    cardHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: 12,
     },
-    tipoContainer: {
-        flexDirection: 'row',
-        flex: 1,
-        alignItems: 'flex-start',
-    },
-    tipoIcon: {
+    iconContainer: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
-    iconText: {
-        fontSize: 18,
-    },
-    notificacionContent: {
+    headerTextContainer: {
         flex: 1,
     },
-    notificacionTitulo: {
+    notificationTitle: {
         fontSize: 16,
         fontWeight: '600',
         color: ParkampusTheme.colors.black,
-        marginBottom: 4,
+        marginBottom: 2,
     },
-    tituloNoLeido: {
-        fontWeight: 'bold',
-    },
-    notificacionMensaje: {
-        fontSize: 14,
+    notificationTime: {
+        fontSize: 12,
         color: ParkampusTheme.colors.gray,
-        lineHeight: 20,
     },
-    puntito: {
+    unreadDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
         backgroundColor: ParkampusTheme.colors.main,
-        marginTop: 4,
+        marginLeft: 8,
     },
-    notificacionTiempo: {
-        fontSize: 12,
-        color: '#999',
-        textAlign: 'right',
+    notificationMessage: {
+        fontSize: 14,
+        color: ParkampusTheme.colors.textSecondary,
+        lineHeight: 20,
+        paddingLeft: 52, // Align with text, skipping icon
     },
     emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
         paddingTop: 60,
-    },
-    emptyIcon: {
-        fontSize: 64,
-        marginBottom: 16,
+        gap: 16,
     },
     emptyTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
-        color: ParkampusTheme.colors.black,
-        marginBottom: 8,
+        color: ParkampusTheme.colors.textSecondary,
     },
     emptyMessage: {
-        fontSize: 16,
+        fontSize: 14,
         color: ParkampusTheme.colors.gray,
         textAlign: 'center',
-        paddingHorizontal: 32,
-        lineHeight: 22,
+        maxWidth: '80%',
     },
 });
