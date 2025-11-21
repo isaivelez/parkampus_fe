@@ -9,7 +9,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AuthContextType {
     user: User | null;
-    setUser: (user: User | null) => void;
+    token: string | null;
+    setUser: (user: User | null, token?: string) => void;
     logout: () => Promise<void>;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -19,47 +20,63 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUserState] = useState<User | null>(null);
+    const [token, setTokenState] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     React.useEffect(() => {
-        // Cargar usuario guardado al iniciar
-        const loadUser = async () => {
+        // Cargar usuario y token guardados al iniciar
+        const loadStorageData = async () => {
             try {
-                const storedUser = await AsyncStorage.getItem("user");
-                if (storedUser) {
+                const [storedUser, storedToken] = await Promise.all([
+                    AsyncStorage.getItem("user"),
+                    AsyncStorage.getItem("authToken")
+                ]);
+
+                if (storedUser && storedToken) {
                     setUserState(JSON.parse(storedUser));
+                    setTokenState(storedToken);
                 }
             } catch (error) {
-                console.error("Error cargando usuario:", error);
+                console.error("Error cargando datos de sesión:", error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadUser();
+        loadStorageData();
     }, []);
 
-    const setUser = (userData: User | null) => {
+    const setUser = (userData: User | null, authToken?: string) => {
         setUserState(userData);
-        if (userData) {
+
+        if (userData && authToken) {
+            setTokenState(authToken);
             AsyncStorage.setItem("user", JSON.stringify(userData));
+            AsyncStorage.setItem("authToken", authToken);
         } else {
+            setTokenState(null);
             AsyncStorage.removeItem("user");
+            AsyncStorage.removeItem("authToken");
         }
     };
 
     const logout = async () => {
         setUserState(null);
-        await AsyncStorage.removeItem("user");
+        setTokenState(null);
+        await Promise.all([
+            AsyncStorage.removeItem("user"),
+            AsyncStorage.removeItem("authToken")
+        ]);
     };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                token,
                 setUser,
                 logout,
-                isAuthenticated: !!user,
+                isAuthenticated: !!user && !!token,
                 isLoading,
             }}
         >

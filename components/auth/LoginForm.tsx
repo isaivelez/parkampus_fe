@@ -38,8 +38,8 @@ export function LoginForm() {
                 password: data.password,
             });
 
-            if (response.success && response.data?.user) {
-                setUser(response.data.user);
+            if (response.success && response.data?.user && response.data?.token) {
+                setUser(response.data.user, response.data.token);
                 Alert.alert(
                     "¡Bienvenido! 🎉",
                     `${response.data.user.first_name} ${response.data.user.last_name}\n${response.message}`,
