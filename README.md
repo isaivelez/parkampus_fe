@@ -1,7 +1,7 @@
 # 🚗 Parkampus - Sistema de Gestión de Parqueaderos
 
 <div align="center">
-  <img src="./assets/images/icon.png" alt="Parkampus Logo" width="120" height="120">
+  <img src="./assets/icon.png" alt="Parkampus Logo" width="120" height="120">
   
   [![React Native](https://img.shields.io/badge/React%20Native-0.81.5-blue.svg)](https://reactnative.dev/)
   [![Expo](https://img.shields.io/badge/Expo-~54.0.20-000020.svg)](https://expo.dev/)
@@ -133,7 +133,6 @@ parkampus_fe/
 │   │   └── _layout.tsx    # Layout de pestañas
 │   └── _layout.tsx        # Layout raíz
 ├── assets/                # Recursos estáticos
-│   └── images/           # Iconos e imágenes
 ├── components/           # Componentes reutilizables
 │   ├── auth/            # Componentes de autenticación
 │   ├── home/            # Componentes del home
