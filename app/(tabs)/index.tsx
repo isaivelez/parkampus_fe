@@ -412,6 +412,26 @@ export default function CeldasScreen() {
                     Actualizado: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
 
+                {/* Schedule Banner - Show only for students/employees without schedule */}
+                {!isCelador && (!user?.schedule || user.schedule.length === 0) && (
+                    <TouchableOpacity
+                        style={styles.scheduleBanner}
+                        onPress={() => router.push('/schedule')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.scheduleBannerIcon}>
+                            <IconSymbol name="calendar" size={24} color={ParkampusTheme.colors.main} />
+                        </View>
+                        <View style={styles.scheduleBannerContent}>
+                            <Text style={styles.scheduleBannerTitle}>Configura tu horario</Text>
+                            <Text style={styles.scheduleBannerText}>
+                                Define tu horario semanal para optimizar el uso del parqueadero
+                            </Text>
+                        </View>
+                        <IconSymbol name="chevron.right" size={20} color={ParkampusTheme.colors.main} />
+                    </TouchableOpacity>
+                )}
+
                 {/* Summary Card */}
                 <SummaryCard available={totalAvailable} total={totalCapacity} />
 
@@ -822,5 +842,38 @@ const styles = StyleSheet.create({
     stepperDivider: {
         height: 1,
         backgroundColor: ParkampusTheme.colors.cardBorder,
+    },
+    scheduleBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF7ED',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#FFEDD5',
+        gap: 12,
+    },
+    scheduleBannerIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scheduleBannerContent: {
+        flex: 1,
+    },
+    scheduleBannerTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: ParkampusTheme.colors.black,
+        marginBottom: 4,
+    },
+    scheduleBannerText: {
+        fontSize: 13,
+        color: '#92400E',
+        lineHeight: 18,
     },
 });

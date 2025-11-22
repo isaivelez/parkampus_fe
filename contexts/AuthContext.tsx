@@ -33,7 +33,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ]);
 
                 if (storedUser && storedToken) {
-                    setUserState(JSON.parse(storedUser));
+                    const parsedUser = JSON.parse(storedUser);
+                    console.log('📅 Usuario cargado desde AsyncStorage:', {
+                        email: parsedUser.email,
+                        hasSchedule: !!parsedUser.schedule,
+                        scheduleLength: parsedUser.schedule?.length || 0,
+                        schedule: parsedUser.schedule
+                    });
+                    setUserState(parsedUser);
                     setTokenState(storedToken);
                 }
             } catch (error) {
@@ -50,6 +57,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserState(userData);
 
         if (userData && authToken) {
+            console.log('💾 Guardando usuario en AsyncStorage:', {
+                email: userData.email,
+                hasSchedule: !!userData.schedule,
+                scheduleLength: userData.schedule?.length || 0,
+                schedule: userData.schedule
+            });
             setTokenState(authToken);
             AsyncStorage.setItem("user", JSON.stringify(userData));
             AsyncStorage.setItem("authToken", authToken);

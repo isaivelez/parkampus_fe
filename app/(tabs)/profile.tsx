@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'rea
 import { useAuth } from '@/contexts/AuthContext';
 import { ParkampusTheme } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ScheduleCard } from '@/components/profile/ScheduleCard';
 import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
@@ -64,11 +65,12 @@ export default function ProfileScreen() {
                 {/* Settings Section */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Configuración</Text>
-                    <TouchableOpacity
-                        style={styles.settingsCard}
-                        onPress={() => router.push('/settings')}
-                    >
-                        <View style={styles.settingRow}>
+
+                    <View style={styles.settingsCard}>
+                        <TouchableOpacity
+                            style={styles.settingRow}
+                            onPress={() => router.push('/settings')}
+                        >
                             <View style={styles.settingIconContainer}>
                                 <IconSymbol name="bell.fill" size={20} color={ParkampusTheme.colors.main} />
                             </View>
@@ -77,9 +79,40 @@ export default function ProfileScreen() {
                                 <Text style={styles.settingDescription}>Configurar preferencias de notificaciones</Text>
                             </View>
                             <IconSymbol name="chevron.right" size={20} color={ParkampusTheme.colors.gray} />
-                        </View>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+
+                        {/* Only show schedule configuration for non-guards */}
+                        {user?.user_type?.toLowerCase() !== 'celador' && (
+                            <>
+                                <View style={styles.divider} />
+
+                                <TouchableOpacity
+                                    style={styles.settingRow}
+                                    onPress={() => router.push('/schedule')}
+                                >
+                                    <View style={styles.settingIconContainer}>
+                                        <IconSymbol name="calendar" size={20} color={ParkampusTheme.colors.main} />
+                                    </View>
+                                    <View style={styles.settingInfo}>
+                                        <Text style={styles.settingLabel}>Configurar Horario</Text>
+                                        <Text style={styles.settingDescription}>Define tu horario semanal de asistencia</Text>
+                                    </View>
+                                    <IconSymbol name="chevron.right" size={20} color={ParkampusTheme.colors.gray} />
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
                 </View>
+
+                {/* Schedule Section - Only for non-guards */}
+                {user?.user_type?.toLowerCase() !== 'celador' && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Mi horario</Text>
+                        <View style={styles.scheduleDisplayCard}>
+                            {user && <ScheduleCard user={user} />}
+                        </View>
+                    </View>
+                )}
             </ScrollView>
 
             {/* Logout Button - Fixed at bottom */}
@@ -183,6 +216,18 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     settingsCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: ParkampusTheme.colors.cardBorder,
+    },
+    scheduleDisplayCard: {
         backgroundColor: 'white',
         borderRadius: 16,
         padding: 20,

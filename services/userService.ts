@@ -6,6 +6,7 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "@/constants/api";
 import api from "./api";
+import { ScheduleDay } from "@/types/schedule";
 
 // Tipos
 export interface RegisterUserData {
@@ -41,6 +42,7 @@ export interface User {
     user_type: "celador" | "estudiante" | "empleado";
     created_at: string;
     updated_at: string;
+    schedule?: Array<ScheduleDay>;
 }
 
 export interface LoginUserResponse {
@@ -148,5 +150,38 @@ export const checkEmailExists = async (email: string): Promise<boolean> => {
     } catch (error) {
         console.error("Error checking email:", error);
         return false;
+    }
+};
+
+/**
+ * Actualiza la información de un usuario
+ */
+export const updateUser = async (
+    userId: string,
+    data: Partial<User>
+): Promise<{ success: boolean; message: string; data?: User }> => {
+    try {
+        const response = await api.patch(`/api/users/${userId}`, data);
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                throw {
+                    message:
+                        error.response.data?.message ||
+                        error.response.data?.error ||
+                        `Error del servidor: ${error.response.status}`,
+                    status: error.response.status,
+                } as ApiError;
+            } else if (error.request) {
+                throw {
+                    message: "No se pudo conectar con el servidor. Verifica tu conexión.",
+                } as ApiError;
+            }
+        }
+
+        throw {
+            message: "Ocurrió un error inesperado. Intenta de nuevo.",
+        } as ApiError;
     }
 };
