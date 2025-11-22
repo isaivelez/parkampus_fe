@@ -17,6 +17,7 @@ import { ParkampusTheme } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { DAYS_OF_WEEK } from '@/types/schedule';
 import { updateUser, ApiError } from '@/services/userService';
+import { CalendarGrid } from '@/components/schedule/CalendarGrid';
 
 interface DaySchedule {
     enabled: boolean;
@@ -28,6 +29,7 @@ export default function ScheduleScreen() {
     const { user, setUser, token } = useAuth();
     const router = useRouter();
     const [saving, setSaving] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
     const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
     // Initialize schedule state
@@ -80,20 +82,47 @@ export default function ScheduleScreen() {
         }));
     };
 
-    const handleSave = async () => {
-        if (!user) return;
+    const handleSave = () => {
+        // Validate that at least one day is enabled
+        const hasEnabledDays = Object.values(schedule).some(day => day.enabled);
 
-        // Build schedule array with only enabled days
-        const scheduleArray = DAYS_OF_WEEK
-            .filter(day => schedule[day].enabled)
-            .map(day => ({
+        if (!hasEnabledDays) {
+            Alert.alert('Error', 'Debes habilitar al menos un día');
+            return;
+        }
+
+        // Validate that enabled days have valid times
+        for (const [day, config] of Object.entries(schedule)) {
+            if (config.enabled) {
+                const startHour = parseInt(config.start_time.split(':')[0]);
+                const endHour = parseInt(config.end_time.split(':')[0]);
+
+                if (startHour >= endHour) {
+                    Alert.alert('Error', `La hora de salida debe ser mayor que la hora de entrada en ${day}`);
+                    return;
+                }
+            }
+        }
+
+        // Show preview modal
+        setShowPreview(true);
+    };
+
+    const confirmSave = async () => {
+        if (!user || !token) return;
+
+        // Convert schedule to array format
+        const scheduleArray = Object.entries(schedule)
+            .filter(([, config]) => config.enabled)
+            .map(([day, config]) => ({
                 day,
-                start_time: schedule[day].start_time,
-                end_time: schedule[day].end_time,
+                start_time: config.start_time,
+                end_time: config.end_time,
             }));
 
         try {
             setSaving(true);
+            setShowPreview(false);
             const response = await updateUser(user._id, { schedule: scheduleArray });
 
             if (response.success && response.data) {
@@ -208,13 +237,84 @@ export default function ScheduleScreen() {
                         {saving ? (
                             <ActivityIndicator color="white" />
                         ) : (
-                            <>
-                                <IconSymbol name="checkmark.circle.fill" size={20} color="white" />
-                                <Text style={styles.saveButtonText}>Guardar Horario</Text>
-                            </>
+                            <Text style={styles.saveButtonText}>Guardar Horario</Text>
                         )}
                     </TouchableOpacity>
                 </ScrollView>
+
+                {/* Preview Modal */}
+                <Modal
+                    visible={showPreview}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setShowPreview(false)}
+                >
+                    <View style={styles.previewModalOverlay}>
+                        <View style={styles.previewModalContent}>
+                            {/* Modal Header */}
+                            <View style={styles.previewHeader}>
+                                <Text style={styles.previewTitle}>Vista previa de tu horario</Text>
+                                <TouchableOpacity onPress={() => setShowPreview(false)}>
+                                    <IconSymbol name="xmark.circle.fill" size={28} color={ParkampusTheme.colors.gray} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Preview Content */}
+                            <ScrollView style={styles.previewScroll}>
+                                <Text style={styles.previewSubtitle}>
+                                    Así se verá tu horario configurado:
+                                </Text>
+
+                                <CalendarGrid
+                                    schedule={Object.entries(schedule)
+                                        .filter(([, config]) => config.enabled)
+                                        .map(([day, config]) => ({
+                                            day,
+                                            start_time: config.start_time,
+                                            end_time: config.end_time,
+                                        }))}
+                                />
+
+                                {/* Schedule Summary */}
+                                <View style={styles.previewSummary}>
+                                    <Text style={styles.previewSummaryTitle}>Resumen:</Text>
+                                    {Object.entries(schedule)
+                                        .filter(([, config]) => config.enabled)
+                                        .map(([day, config]) => (
+                                            <View key={day} style={styles.previewSummaryItem}>
+                                                <Text style={styles.previewDayName}>{day}</Text>
+                                                <Text style={styles.previewDayTime}>
+                                                    {config.start_time} - {config.end_time}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                </View>
+                            </ScrollView>
+
+                            {/* Modal Actions */}
+                            <View style={styles.previewActions}>
+                                <TouchableOpacity
+                                    style={styles.previewCancelButton}
+                                    onPress={() => setShowPreview(false)}
+                                >
+                                    <Text style={styles.previewCancelText}>Editar</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.previewConfirmButton}
+                                    onPress={confirmSave}
+                                    disabled={saving}
+                                >
+                                    {saving ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <Text style={styles.previewConfirmText}>Confirmar y Guardar</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </SafeAreaView>
         </View>
     );
@@ -481,5 +581,104 @@ const styles = StyleSheet.create({
     modalOptionCheck: {
         fontSize: 20,
         color: ParkampusTheme.colors.main,
+    },
+    // Preview Modal Styles
+    previewModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    previewModalContent: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        width: '100%',
+        maxHeight: '90%',
+        overflow: 'hidden',
+    },
+    previewHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+    },
+    previewTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: ParkampusTheme.colors.black,
+    },
+    previewScroll: {
+        padding: 20,
+    },
+    previewSubtitle: {
+        fontSize: 15,
+        color: ParkampusTheme.colors.textSecondary,
+        marginBottom: 16,
+        fontWeight: '500',
+    },
+    previewSummary: {
+        marginTop: 20,
+        padding: 16,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        gap: 12,
+    },
+    previewSummaryTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: ParkampusTheme.colors.black,
+        marginBottom: 4,
+    },
+    previewSummaryItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    previewDayName: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: ParkampusTheme.colors.black,
+    },
+    previewDayTime: {
+        fontSize: 14,
+        color: ParkampusTheme.colors.textSecondary,
+    },
+    previewActions: {
+        flexDirection: 'row',
+        padding: 20,
+        paddingTop: 16,
+        gap: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+    },
+    previewCancelButton: {
+        flex: 1,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: ParkampusTheme.colors.main,
+        alignItems: 'center',
+    },
+    previewCancelText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: ParkampusTheme.colors.main,
+    },
+    previewConfirmButton: {
+        flex: 2,
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: ParkampusTheme.colors.main,
+        alignItems: 'center',
+    },
+    previewConfirmText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
     },
 });

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ParkampusTheme } from '@/constants/theme';
 import { User } from '@/services/userService';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { CalendarGrid } from '@/components/schedule/CalendarGrid';
 
 interface ScheduleCardProps {
     user: User;
@@ -41,6 +42,9 @@ export function ScheduleCard({ user }: ScheduleCardProps) {
                 <IconSymbol name="calendar.badge.clock" size={20} color={ParkampusTheme.colors.main} />
                 <Text style={styles.scheduleHeaderText}>Horario configurado</Text>
             </View>
+
+            {/* Visual Calendar Grid */}
+            <CalendarGrid schedule={user.schedule} />
 
             {/* Days Grid */}
             <View style={styles.daysGrid}>
