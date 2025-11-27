@@ -57,10 +57,7 @@ function RootLayoutNav() {
     );
 }
 
-import { useNotifications } from '@/hooks/use-notifications';
-
 export default function RootLayout() {
-    useNotifications();
     return (
         <AuthProvider>
             <RootLayoutNav />

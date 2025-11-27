@@ -6,23 +6,13 @@ import { ParkampusTheme } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError, getParkingLots, ParkingLot, updateParkingLot } from '@/services/parkingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Configurar el comportamiento de las notificaciones
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+
 
 // Tipo para el formulario de edición
 type ParkingLotFormData = {
@@ -36,52 +26,12 @@ export default function CeldasScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [editingLotId, setEditingLotId] = useState<string | null>(null);
-    const [notificationPermissionAsked, setNotificationPermissionAsked] = useState(false);
+
 
     // Case insensitive check for celador role
     const isCelador = user?.user_type?.toLowerCase() === 'celador';
 
-    // Función para solicitar permisos de notificaciones
-    const requestNotificationPermissions = async () => {
-        try {
-            // Verificar si ya se pidieron permisos antes
-            const hasAsked = await AsyncStorage.getItem('notificationPermissionAsked');
-            if (hasAsked === 'true') {
-                setNotificationPermissionAsked(true);
-                return;
-            }
 
-            // Obtener el estado actual de los permisos
-            const { status: existingStatus } = await Notifications.getPermissionsAsync();
-            let finalStatus = existingStatus;
-
-            // Si no se han otorgado permisos, pedirlos
-            if (existingStatus !== 'granted') {
-                const { status } = await Notifications.requestPermissionsAsync();
-                finalStatus = status;
-            }
-
-            // Guardar que ya se pidieron permisos
-            await AsyncStorage.setItem('notificationPermissionAsked', 'true');
-            setNotificationPermissionAsked(true);
-
-            if (finalStatus === 'granted') {
-                Alert.alert(
-                    '🔔 Notificaciones activadas',
-                    'Recibirás notificaciones sobre la disponibilidad del parqueadero',
-                    [{ text: 'Entendido' }]
-                );
-            } else {
-                Alert.alert(
-                    '⚠️ Notificaciones desactivadas',
-                    'Puedes activarlas más tarde desde la configuración de tu dispositivo',
-                    [{ text: 'Entendido' }]
-                );
-            }
-        } catch (error) {
-            console.error('Error al solicitar permisos de notificaciones:', error);
-        }
-    };
 
     // Función para obtener los parking lots
     const fetchParkingLots = async () => {
@@ -102,15 +52,6 @@ export default function CeldasScreen() {
     // Cargar datos al montar el componente
     useEffect(() => {
         fetchParkingLots();
-
-        // Solicitar permisos de notificaciones después de un breve delay
-        const timer = setTimeout(() => {
-            if (!notificationPermissionAsked) {
-                requestNotificationPermissions();
-            }
-        }, 2000); // 2 segundos después de cargar
-
-        return () => clearTimeout(timer);
     }, []);
 
     // Función para refrescar

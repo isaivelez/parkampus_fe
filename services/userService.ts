@@ -43,6 +43,13 @@ export interface User {
     created_at: string;
     updated_at: string;
     schedule?: Array<ScheduleDay>;
+    notification_preferences?: {
+        CIERRE_NOCTURNO?: boolean;
+        LIBERACION_HORA_PICO?: boolean;
+        CIERRE_SEGURIDAD?: boolean;
+        EVENTO_INSTITUCIONAL?: boolean;
+        MANTENIMIENTO_EMERGENCIA?: boolean;
+    };
 }
 
 export interface LoginUserResponse {

@@ -20,6 +20,13 @@ export default function NotificacionesScreen() {
     const { user } = useAuth();
 
     const fetchNotifications = useCallback(async () => {
+        // Don't fetch if user is not authenticated
+        if (!user) {
+            setLoading(false);
+            setRefreshing(false);
+            return;
+        }
+
         try {
             console.log('📱 Fetching notifications for user:', user?.email, 'Type:', user?.user_type);
             const response = await api.get<NotificationHistoryResponse>(API_ENDPOINTS.NOTIFICATIONS_HISTORY);
