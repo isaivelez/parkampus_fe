@@ -1,87 +1,79 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ParkampusTheme } from '@/constants/theme';
-import { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '@/services/api';
+import { API_ENDPOINTS } from '@/constants/api';
+import { Notification, NotificationHistoryResponse } from '@/types/notification';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+import { CreateNotificationModal } from '@/components/notifications/CreateNotificationModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function NotificacionesScreen() {
     const [refreshing, setRefreshing] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
-    // Datos de ejemplo para las notificaciones
-    const notificaciones = [
-        {
-            id: 1,
-            tipo: 'reserva',
-            titulo: 'Reserva confirmada',
-            mensaje: 'Tu reserva para el espacio A-01 ha sido confirmada',
-            tiempo: 'Hace 5 minutos',
-            leida: false,
-        },
-        {
-            id: 2,
-            tipo: 'mantenimiento',
-            titulo: 'Mantenimiento programado',
-            mensaje: 'El espacio B-04 estará en mantenimiento mañana',
-            tiempo: 'Hace 1 hora',
-            leida: false,
-        },
-        {
-            id: 3,
-            tipo: 'disponibilidad',
-            titulo: 'Nuevo espacio disponible',
-            mensaje: 'El espacio C-02 ya está disponible para reservar',
-            tiempo: 'Hace 2 horas',
-            leida: true,
-        },
-        {
-            id: 4,
-            tipo: 'sistema',
-            titulo: 'Actualización del sistema',
-            mensaje: 'Parkampus se actualizará esta noche a las 23:00',
-            tiempo: 'Hace 3 horas',
-            leida: true,
-        },
-        {
-            id: 5,
-            tipo: 'vencimiento',
-            titulo: 'Reserva por vencer',
-            mensaje: 'Tu reserva en A-03 vence en 30 minutos',
-            tiempo: 'Hace 4 horas',
-            leida: true,
-        },
-    ];
+    const fetchNotifications = useCallback(async () => {
+        try {
+            console.log('📱 Fetching notifications for user:', user?.email, 'Type:', user?.user_type);
+            const response = await api.get<NotificationHistoryResponse>(API_ENDPOINTS.NOTIFICATIONS_HISTORY);
+            console.log('📬 Notifications response:', response.data);
+            if (response.data.success) {
+                setNotifications(response.data.data);
+                console.log('✅ Loaded', response.data.data.length, 'notifications');
+            }
+        } catch (error) {
+            console.error('❌ Error fetching notifications:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     const onRefresh = () => {
         setRefreshing(true);
-        // Simular carga
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 1000);
+        fetchNotifications();
     };
 
     const getTipoIcon = (tipo: string) => {
         switch (tipo) {
-            case 'reserva': return 'checkmark.circle.fill';
-            case 'mantenimiento': return 'wrench.and.screwdriver.fill';
-            case 'disponibilidad': return 'car.fill';
-            case 'sistema': return 'gearshape.fill';
-            case 'vencimiento': return 'clock.fill';
+            case 'CIERRE_NOCTURNO': return 'moon.fill';
+            case 'LIBERACION_HORA_PICO': return 'car.fill';
+            case 'CIERRE_SEGURIDAD': return 'exclamationmark.triangle.fill';
+            case 'EVENTO_INSTITUCIONAL': return 'calendar.badge.exclamationmark';
+            case 'MANTENIMIENTO_EMERGENCIA': return 'wrench.and.screwdriver.fill';
             default: return 'bell.fill';
         }
     };
 
     const getTipoColor = (tipo: string) => {
         switch (tipo) {
-            case 'reserva': return ParkampusTheme.colors.success;
-            case 'mantenimiento': return ParkampusTheme.colors.warning;
-            case 'disponibilidad': return ParkampusTheme.colors.main;
-            case 'sistema': return '#6366F1';
-            case 'vencimiento': return ParkampusTheme.colors.danger;
+            case 'CIERRE_NOCTURNO': return '#1E293B'; // Slate 800
+            case 'LIBERACION_HORA_PICO': return ParkampusTheme.colors.success;
+            case 'CIERRE_SEGURIDAD': return ParkampusTheme.colors.danger;
+            case 'EVENTO_INSTITUCIONAL': return ParkampusTheme.colors.main;
+            case 'MANTENIMIENTO_EMERGENCIA': return ParkampusTheme.colors.warning;
             default: return ParkampusTheme.colors.gray;
         }
     };
 
-    const noLeidas = notificaciones.filter(n => !n.leida).length;
+    const formatTime = (dateString: string) => {
+        try {
+            return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: es });
+        } catch (e) {
+            return dateString;
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -94,66 +86,95 @@ export default function NotificacionesScreen() {
                         </View>
                         <Text style={styles.headerTitle}>Notificaciones</Text>
                     </View>
-                    {noLeidas > 0 && (
-                        <View style={styles.badgeContainer}>
-                            <Text style={styles.badgeText}>{noLeidas} nuevas</Text>
-                        </View>
-                    )}
                 </View>
 
                 <ScrollView
                     style={styles.scrollView}
+                    contentContainerStyle={styles.contentContainer}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ParkampusTheme.colors.main} />
                     }
                 >
-                    <View style={styles.contentContainer}>
-                        {notificaciones.map((notificacion) => (
-                            <TouchableOpacity
-                                key={notificacion.id}
-                                style={[
-                                    styles.notificationCard,
-                                    !notificacion.leida && styles.notificationUnread
-                                ]}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.cardHeader}>
-                                    <View style={[
-                                        styles.iconContainer,
-                                        { backgroundColor: getTipoColor(notificacion.tipo) + '20' } // 20% opacity
-                                    ]}>
-                                        <IconSymbol
-                                            name={getTipoIcon(notificacion.tipo) as any}
-                                            size={24}
-                                            color={getTipoColor(notificacion.tipo)}
-                                        />
-                                    </View>
-                                    <View style={styles.headerTextContainer}>
-                                        <Text style={styles.notificationTitle}>{notificacion.titulo}</Text>
-                                        <Text style={styles.notificationTime}>{notificacion.tiempo}</Text>
-                                    </View>
-                                    {!notificacion.leida && (
-                                        <View style={styles.unreadDot} />
-                                    )}
-                                </View>
-                                <Text style={styles.notificationMessage}>
-                                    {notificacion.mensaje}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        {notificaciones.length === 0 && (
-                            <View style={styles.emptyContainer}>
-                                <IconSymbol name="bell.slash" size={48} color={ParkampusTheme.colors.gray} />
-                                <Text style={styles.emptyTitle}>No hay notificaciones</Text>
-                                <Text style={styles.emptyMessage}>
-                                    Te avisaremos cuando haya novedades importantes.
-                                </Text>
-                            </View>
-                        )}
+                    {/* Status Bar */}
+                    <View style={styles.statusBar}>
+                        <View style={styles.statusBadge}>
+                            <IconSymbol name="wifi" size={12} color={ParkampusTheme.colors.success} />
+                            <Text style={styles.statusText}>Conectado</Text>
+                        </View>
+                        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+                            <IconSymbol name="arrow.clockwise" size={14} color={ParkampusTheme.colors.main} />
+                            <Text style={styles.refreshText}>Actualizar</Text>
+                        </TouchableOpacity>
                     </View>
+                    <Text style={styles.lastUpdated}>
+                        Actualizado: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+
+                    {loading && !refreshing ? (
+                        <ActivityIndicator size="large" color={ParkampusTheme.colors.main} style={{ marginTop: 20 }} />
+                    ) : (
+                        <>
+                            {notifications.map((notificacion) => (
+                                <TouchableOpacity
+                                    key={notificacion._id}
+                                    style={styles.notificationCard}
+                                    activeOpacity={0.7}
+                                >
+                                    <View style={styles.cardHeader}>
+                                        <View style={[
+                                            styles.iconContainer,
+                                            { backgroundColor: getTipoColor(notificacion.type) + '20' } // 20% opacity
+                                        ]}>
+                                            <IconSymbol
+                                                name={getTipoIcon(notificacion.type) as any}
+                                                size={24}
+                                                color={getTipoColor(notificacion.type)}
+                                            />
+                                        </View>
+                                        <View style={styles.headerTextContainer}>
+                                            <Text style={styles.notificationTitle}>{notificacion.subject}</Text>
+                                            <Text style={styles.notificationTime}>{formatTime(notificacion.created_at)}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+
+                            {notifications.length === 0 && (
+                                <View style={styles.emptyContainer}>
+                                    <IconSymbol name="bell.slash" size={48} color={ParkampusTheme.colors.gray} />
+                                    <Text style={styles.emptyTitle}>No hay notificaciones</Text>
+                                    <Text style={styles.emptyMessage}>
+                                        Te avisaremos cuando haya novedades importantes.
+                                    </Text>
+                                </View>
+                            )}
+                        </>
+                    )}
                 </ScrollView>
+
+                {/* Botón flotante para celadores */}
+                {user?.user_type === 'celador' && (
+                    <View style={styles.stickyButtonContainer}>
+                        <TouchableOpacity
+                            style={styles.createButton}
+                            onPress={() => setModalVisible(true)}
+                            activeOpacity={0.8}
+                        >
+                            <IconSymbol name="plus.circle.fill" size={24} color="white" />
+                            <Text style={styles.createButtonText}>Crear notificación</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <CreateNotificationModal
+                    visible={modalVisible}
+                    onClose={() => setModalVisible(false)}
+                    onSuccess={() => {
+                        // Aquí podrías recargar las notificaciones si vinieran del backend
+                        onRefresh();
+                    }}
+                />
             </SafeAreaView>
         </View>
     );
@@ -285,5 +306,82 @@ const styles = StyleSheet.create({
         color: ParkampusTheme.colors.gray,
         textAlign: 'center',
         maxWidth: '80%',
+    },
+    stickyButtonContainer: {
+        position: 'absolute',
+        bottom: 80,
+        left: 20,
+        right: 20,
+        alignItems: 'center',
+    },
+    createButton: {
+        backgroundColor: ParkampusTheme.colors.main,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+        gap: 8,
+        width: '100%',
+    },
+    createButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    statusBar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    statusText: {
+        color: ParkampusTheme.colors.success,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    refreshButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    refreshText: {
+        color: ParkampusTheme.colors.main,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    lastUpdated: {
+        color: ParkampusTheme.colors.gray,
+        fontSize: 12,
+        marginBottom: 20,
+        marginLeft: 4,
     },
 });
