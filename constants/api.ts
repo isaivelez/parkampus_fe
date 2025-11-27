@@ -27,6 +27,9 @@ export const API_ENDPOINTS = {
 
     // Notificaciones
     NOTIFICACIONES: "/api/notificaciones",
+    UPDATE_TOKEN: "/api/notifications/update-token",
+    CREATE_NOTIFICATION: "/api/notifications/mass-email",
+    NOTIFICATIONS_HISTORY: "/api/notifications/history",
 };
 
 // Configuración de timeout desde variables de entorno
